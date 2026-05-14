@@ -76,6 +76,13 @@ export const projects = pgTable(
       .references(() => users.id, { onDelete: 'restrict' }),
     status: text('status', { enum: ['active', 'paused', 'archived'] }).notNull().default('active'),
     monthlyCostCeilingUsd: integer('monthly_cost_ceiling_usd').notNull().default(20),
+
+    // Brief — pasted PRD / product description, logo URL, and the channels
+    // this project publishes to. Setup wizard agents consume these in Phase 4.
+    brief: text('brief'),
+    logoUrl: text('logo_url'),
+    channels: text('channels').array().notNull().default(sql`ARRAY['linkedin','instagram']`),
+
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

@@ -1,7 +1,11 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useRoute } from 'wouter';
-import { api } from '../lib/api';
-import type { Project } from '../lib/projects';
+import { api, ApiError } from '../lib/api';
+import { useUpdateBrief, type Project } from '../lib/projects';
+
+const ALL_CHANNELS = ['linkedin', 'instagram'] as const;
+type Channel = (typeof ALL_CHANNELS)[number];
 
 export function ProjectDetailPage() {
   const [, params] = useRoute('/projects/:id');
@@ -11,6 +15,7 @@ export function ProjectDetailPage() {
     queryKey: ['projects', id],
     queryFn: () => api<{ project: Project }>(`/api/projects/${id}`).then((r) => r.project),
   });
+  const project = query.data;
 
   if (!id) return null;
 
@@ -21,42 +26,176 @@ export function ProjectDetailPage() {
           <Link href="/" className="text-neutral-500 hover:text-neutral-900">
             ← All projects
           </Link>
+          {project && (
+            <Link
+              href={`/projects/${project.id}/pipeline`}
+              className="rounded-md border border-neutral-200 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
+            >
+              View pipeline →
+            </Link>
+          )}
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
+      <main className="max-w-4xl mx-auto px-6 py-8">
         {query.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-        {query.error && (
-          <p className="text-sm text-red-600">Could not load project.</p>
-        )}
-        {query.data && (
+        {query.error && <p className="text-sm text-red-600">Could not load project.</p>}
+        {project && (
           <>
-            <div className="flex items-baseline justify-between">
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight">{query.data.name}</h1>
-                <p className="text-sm text-neutral-500 font-mono mt-1">{query.data.slug}</p>
-              </div>
-              <Link
-                href={`/projects/${query.data.id}/pipeline`}
-                className="rounded-md border border-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-              >
-                View pipeline →
-              </Link>
+            <div className="mb-6">
+              <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
+              <p className="text-sm text-neutral-500 font-mono mt-1">{project.slug}</p>
+              <p className="text-xs text-neutral-500 mt-2">
+                Status <span className="font-mono">{project.status}</span> · Monthly cost ceiling{' '}
+                <span className="font-mono">${project.monthlyCostCeilingUsd}</span>
+              </p>
             </div>
 
-            <section className="mt-8 rounded-lg border border-neutral-200 p-6">
-              <p className="text-sm text-neutral-600">
-                Status: <span className="font-mono">{query.data.status}</span> · Monthly cost
-                ceiling: <span className="font-mono">${query.data.monthlyCostCeilingUsd}</span>
-              </p>
-              <p className="text-xs text-neutral-500 mt-3">
-                Setup wizard ships in Phase 4. The pipeline graph above is already wired up and
-                will populate live as agents run.
-              </p>
-            </section>
+            <BriefForm project={project} />
           </>
         )}
       </main>
     </div>
+  );
+}
+
+function BriefForm({ project }: { project: Project }) {
+  const update = useUpdateBrief(project.id);
+  const [brief, setBrief] = useState(project.brief ?? '');
+  const [logoUrl, setLogoUrl] = useState(project.logoUrl ?? '');
+  const [channels, setChannels] = useState<Channel[]>(
+    (project.channels.filter((c) => ALL_CHANNELS.includes(c as Channel)) as Channel[]) ?? [
+      'linkedin',
+      'instagram',
+    ],
+  );
+  const [saved, setSaved] = useState(false);
+
+  // Reset local state when the upstream project payload changes (e.g. on initial load).
+  useEffect(() => {
+    setBrief(project.brief ?? '');
+    setLogoUrl(project.logoUrl ?? '');
+    setChannels(project.channels.filter((c) => ALL_CHANNELS.includes(c as Channel)) as Channel[]);
+  }, [project.id, project.brief, project.logoUrl, project.channels]);
+
+  const toggleChannel = (ch: Channel) => {
+    setChannels((prev) => (prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]));
+  };
+
+  async function onSave() {
+    setSaved(false);
+    try {
+      await update.mutateAsync({
+        brief: brief.trim() === '' ? null : brief,
+        logoUrl: logoUrl.trim() === '' ? null : logoUrl.trim(),
+        channels,
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch {
+      // Error surfaced below via update.error
+    }
+  }
+
+  const dirty =
+    (project.brief ?? '') !== brief ||
+    (project.logoUrl ?? '') !== logoUrl.trim() ||
+    project.channels.slice().sort().join(',') !== channels.slice().sort().join(',');
+
+  const errorMessage = update.error instanceof ApiError ? update.error.message : null;
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <div className="flex items-baseline justify-between mb-2">
+          <h2 className="text-base font-semibold tracking-tight">Brief</h2>
+          <p className="text-xs text-neutral-500">
+            Paste the PRD, product description, or feature list. The setup-time agents (Parser,
+            Audience, Voice, Persona, Theme) consume this in Phase 4.
+          </p>
+        </div>
+        <textarea
+          value={brief}
+          onChange={(e) => setBrief(e.target.value)}
+          rows={14}
+          placeholder={`What does this product do?
+Who is it for?
+What problems does it solve?
+What are the core features?
+What is the brand voice like?
+Anything else worth knowing — past content, off-limits topics, competitors to differentiate from...`}
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-neutral-900"
+        />
+        <p className="mt-1 text-xs text-neutral-400">{brief.length.toLocaleString()} characters</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" htmlFor="logoUrl">
+          Logo URL
+        </label>
+        <input
+          id="logoUrl"
+          type="url"
+          value={logoUrl}
+          onChange={(e) => setLogoUrl(e.target.value)}
+          placeholder="https://example.com/logo.png"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+        />
+        <p className="mt-1 text-xs text-neutral-500">
+          For now, paste a public URL. Direct upload to S3 lands with the Brand Kit step.
+        </p>
+        {logoUrl && (
+          <div className="mt-3 inline-flex items-center gap-3 rounded-md border border-neutral-200 p-2">
+            <img
+              src={logoUrl}
+              alt="Logo preview"
+              className="h-12 w-12 object-contain"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            <span className="text-xs text-neutral-500">preview</span>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <p className="block text-sm font-medium mb-1.5">Channels</p>
+        <div className="flex gap-2">
+          {ALL_CHANNELS.map((ch) => {
+            const active = channels.includes(ch);
+            return (
+              <button
+                key={ch}
+                type="button"
+                onClick={() => toggleChannel(ch)}
+                className={`rounded-md border px-3 py-1.5 text-sm capitalize ${
+                  active
+                    ? 'bg-neutral-900 border-neutral-900 text-white'
+                    : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
+                }`}
+              >
+                {ch}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 border-t border-neutral-200 pt-4">
+        <button
+          onClick={onSave}
+          disabled={!dirty || update.isPending || channels.length === 0}
+          className="rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
+        >
+          {update.isPending ? 'Saving…' : 'Save brief'}
+        </button>
+        {saved && <span className="text-xs text-emerald-700">Saved.</span>}
+        {errorMessage && <span className="text-xs text-red-600">{errorMessage}</span>}
+        {!dirty && !saved && !errorMessage && project.brief && (
+          <span className="text-xs text-neutral-500">Up to date.</span>
+        )}
+      </div>
+    </section>
   );
 }

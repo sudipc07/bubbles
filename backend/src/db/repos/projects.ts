@@ -33,6 +33,24 @@ export async function findProjectByIdForMember(
   return r ? { ...r.project, role: r.role } : undefined;
 }
 
+export async function updateProjectBrief(
+  projectId: string,
+  ownerUserId: string,
+  patch: { brief?: string | null; logoUrl?: string | null; channels?: string[] },
+): Promise<Project | undefined> {
+  const updates: Partial<typeof projects.$inferInsert> = { updatedAt: new Date() };
+  if (patch.brief !== undefined) updates.brief = patch.brief;
+  if (patch.logoUrl !== undefined) updates.logoUrl = patch.logoUrl;
+  if (patch.channels !== undefined) updates.channels = patch.channels;
+
+  const rows = await db
+    .update(projects)
+    .set(updates)
+    .where(and(eq(projects.id, projectId), eq(projects.ownerUserId, ownerUserId)))
+    .returning();
+  return rows[0];
+}
+
 export async function createProject(input: { name: string; ownerUserId: string }): Promise<Project> {
   const id = newId();
   const slug = `${slugify(input.name)}-${newSlugSuffix()}`;

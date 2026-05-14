@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createProject, findProjectByIdForMember, listProjectsForUser } from '../../db/repos/projects.js';
+import {
+  createProject,
+  findProjectByIdForMember,
+  listProjectsForUser,
+  updateProjectBrief,
+} from '../../db/repos/projects.js';
 import { requireUser } from '../middleware/session.js';
 
 export const projects = Router();
@@ -28,6 +33,26 @@ projects.get('/:id', async (req, res) => {
   const project = await findProjectByIdForMember(req.params.id, req.user!.id);
   if (!project) {
     res.status(404).json({ error: 'not_found' });
+    return;
+  }
+  res.json({ project });
+});
+
+const briefSchema = z.object({
+  brief: z.string().max(50_000).nullable().optional(),
+  logoUrl: z.string().url().max(2048).nullable().optional(),
+  channels: z.array(z.enum(['linkedin', 'instagram'])).min(1).optional(),
+});
+
+projects.patch('/:id/brief', async (req, res) => {
+  const parsed = briefSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
+    return;
+  }
+  const project = await updateProjectBrief(req.params.id, req.user!.id, parsed.data);
+  if (!project) {
+    res.status(404).json({ error: 'not_found_or_not_owner' });
     return;
   }
   res.json({ project });
