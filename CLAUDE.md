@@ -70,7 +70,7 @@ Pick the implementation that fits these constraints:
 ## Infrastructure (locked)
 
 - EC2: `52.6.169.112` (Ubuntu, us-east-1). Co-located with ResumeFolio.
-- Backend port: 3001 (ResumeFolio holds 3000).
+- Backend port: 3002 (ResumeFolio holds 3000).
 - Postgres: local, DB `bubbles`, user `bubbles`. Password in `/home/ubuntu/bubbles/.env`.
 - Repo on EC2: `/home/ubuntu/bubbles/`. Static files served from `/opt/bubbles/frontend/`.
 - PM2 process: `bubbles-api`, runs as `ubuntu`.

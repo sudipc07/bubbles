@@ -35,4 +35,4 @@ pm2 restart bubbles-api --update-env
 
 echo
 echo "✓ Deployed. Health:"
-curl -sf http://127.0.0.1:3001/api/healthz && echo
+curl -sf http://127.0.0.1:3002/api/healthz && echo

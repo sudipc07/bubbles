@@ -70,7 +70,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
   SESSION_SECRET=$(openssl rand -hex 32)
   cat > "$ENV_FILE" <<EOF
 NODE_ENV=production
-PORT=3001
+PORT=3002
 PUBLIC_URL=https://bubbles.work
 
 DATABASE_URL=postgresql://${DB_USER}:${NEW_DB_PASS}@127.0.0.1:5432/${DB_NAME}
@@ -78,7 +78,7 @@ SESSION_SECRET=${SESSION_SECRET}
 
 EMAIL_PROVIDER=ses
 AWS_REGION=ap-south-1
-SES_FROM_EMAIL=Bubbles <no-reply@resume-folio.app>
+SES_FROM_EMAIL='Bubbles <no-reply@resume-folio.app>'
 
 S3_BUCKET=bubbles
 S3_REGION=ap-south-1
@@ -135,7 +135,7 @@ fi
 
 step "Health check"
 sleep 2
-curl -sf http://127.0.0.1:3001/api/healthz && echo
+curl -sf http://127.0.0.1:3002/api/healthz && echo
 curl -sIk https://bubbles.work/ | head -n 1 || true
 
 echo
