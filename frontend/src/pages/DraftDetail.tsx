@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Link, useRoute } from 'wouter';
 import { useDecideDraft, useDraft, useMarkPosted } from '../lib/drafts';
+import { useSetupOutputs } from '../lib/setup';
+import { SlidePreview } from '../components/SlidePreview';
 
 export function DraftDetailPage() {
   const [, params] = useRoute('/projects/:id/drafts/:draftId');
   const projectId = params?.id;
   const draftId = params?.draftId;
   const query = useDraft(projectId, draftId);
+  const setupOutputs = useSetupOutputs(projectId);
   const decide = useDecideDraft(projectId, draftId);
   const post = useMarkPosted(projectId, draftId);
   const [postUrl, setPostUrl] = useState('');
@@ -74,20 +77,30 @@ export function DraftDetailPage() {
             </div>
 
             <section>
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-2">
-                Slides
-              </h2>
-              <ol className="space-y-2">
+              <div className="flex items-baseline justify-between mb-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+                  Slide previews
+                </h2>
+                <p className="text-xs text-neutral-400">
+                  Brand-kit themed. Pre-Designer/Playwright; final images render server-side once
+                  Phase 5 lands.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {query.data.slides.map((s) => (
-                  <li key={s.id} className="rounded-lg border border-neutral-200 p-4">
-                    <p className="text-[10px] uppercase tracking-wide text-neutral-500">
+                  <div key={s.id}>
+                    <SlidePreview
+                      slide={s}
+                      totalSlides={query.data!.slides.length}
+                      kit={setupOutputs.data?.brandKit ?? null}
+                      format={query.data!.draft.format}
+                    />
+                    <p className="mt-1.5 text-[10px] uppercase tracking-wide text-neutral-400">
                       Slide {s.slideIndex + 1} · {s.kind}
                     </p>
-                    {s.title && <p className="font-medium mt-1">{s.title}</p>}
-                    <p className="text-sm mt-1 whitespace-pre-wrap leading-relaxed">{s.body}</p>
-                  </li>
+                  </div>
                 ))}
-              </ol>
+              </div>
             </section>
 
             {query.data.draft.linkedinCaption && (

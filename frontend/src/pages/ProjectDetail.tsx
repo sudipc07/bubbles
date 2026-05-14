@@ -5,6 +5,8 @@ import { api, ApiError } from '../lib/api';
 import { useUpdateBrief, type Project } from '../lib/projects';
 import { useRunSetup, useSetupOutputs } from '../lib/setup';
 import { SetupOutputsView } from '../components/SetupOutputs';
+import { useDrafts } from '../lib/drafts';
+import { useRuns } from '../lib/pipeline';
 
 const ALL_CHANNELS = ['linkedin', 'instagram'] as const;
 type Channel = (typeof ALL_CHANNELS)[number];
@@ -61,6 +63,7 @@ export function ProjectDetailPage() {
               </p>
             </div>
 
+            <DashboardStrip project={project} />
             <BriefForm project={project} />
             <hr className="my-10 border-neutral-200" />
             <SetupSection project={project} />
@@ -122,6 +125,62 @@ function SetupSection({ project }: { project: Project }) {
         </p>
       )}
     </section>
+  );
+}
+
+function DashboardStrip({ project }: { project: Project }) {
+  const drafts = useDrafts(project.id, 'all');
+  const runs = useRuns(project.id);
+
+  const counts = {
+    pending: drafts.data?.filter((d) => d.status === 'pending').length ?? 0,
+    approved: drafts.data?.filter((d) => d.status === 'approved').length ?? 0,
+    posted: drafts.data?.filter((d) => d.status === 'posted').length ?? 0,
+  };
+  const lastRun = runs.data?.runs[0];
+
+  return (
+    <section className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <StatCell label="Pending drafts" value={counts.pending} link={`/projects/${project.id}/drafts?filter=pending`} />
+      <StatCell label="Approved" value={counts.approved} />
+      <StatCell label="Posted" value={counts.posted} />
+      <StatCell
+        label="30-day spend"
+        value={runs.data ? `$${runs.data.monthlySpendUsd.toFixed(4)}` : '—'}
+        sub={
+          lastRun
+            ? `last run: ${new Date(lastRun.startedAt).toLocaleString()} (${lastRun.status})`
+            : 'no runs yet'
+        }
+      />
+    </section>
+  );
+}
+
+function StatCell({
+  label,
+  value,
+  sub,
+  link,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  link?: string;
+}) {
+  const body = (
+    <div className="rounded-lg border border-neutral-200 p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">{label}</p>
+      <p className="mt-1 text-xl font-semibold font-mono">{value}</p>
+      {sub && <p className="text-[10px] text-neutral-500 mt-1 truncate">{sub}</p>}
+    </div>
+  );
+  return link ? (
+    <Link href={link} className="block hover:opacity-80">
+      {body}
+    </Link>
+  ) : (
+    body
   );
 }
 
