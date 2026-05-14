@@ -135,20 +135,19 @@ export function PipelinePage() {
                 <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">Run</th>
+                    <th className="text-left px-3 py-2 font-medium">Pipeline</th>
                     <th className="text-left px-3 py-2 font-medium">Started</th>
-                    <th className="text-left px-3 py-2 font-medium">Finished</th>
                     <th className="text-left px-3 py-2 font-medium">Status</th>
+                    <th className="text-left px-3 py-2 font-medium">Error</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200">
                   {runs.data.runs.map((r) => (
                     <tr key={r.id} className="hover:bg-neutral-50">
                       <td className="px-3 py-2 font-mono text-xs">{r.id.slice(0, 8)}</td>
+                      <td className="px-3 py-2 text-xs text-neutral-600 capitalize">{r.pipeline}</td>
                       <td className="px-3 py-2 text-xs text-neutral-600">
                         {new Date(r.startedAt).toLocaleString()}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-neutral-600">
-                        {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : '—'}
                       </td>
                       <td className="px-3 py-2 text-xs">
                         <span
@@ -162,6 +161,9 @@ export function PipelinePage() {
                         >
                           {r.status}
                         </span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-red-600 max-w-md">
+                        {r.error ? <code className="break-all whitespace-pre-wrap">{r.error}</code> : ''}
                       </td>
                     </tr>
                   ))}
