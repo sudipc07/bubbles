@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { getGraph } from '../../agents/graph.js';
+import { triggerRuntimeRun } from '../../agents/runtime/orchestrator.js';
 import { findProjectByIdForMember } from '../../db/repos/projects.js';
 import { getRunForProject, listRunsForProject, projectMonthlySpendUsd } from '../../db/repos/pipelineRuns.js';
+import { checkLimit } from '../../lib/rateLimit.js';
 import { requireUser } from '../middleware/session.js';
 
 export const pipeline = Router();
@@ -30,6 +32,28 @@ pipeline.get('/:projectId/runs', async (req, res) => {
   const runs = await listRunsForProject(projectId);
   const monthlyUsd = await projectMonthlySpendUsd(projectId);
   res.json({ runs, monthlySpendUsd: monthlyUsd });
+});
+
+// POST /api/pipeline/:projectId/runs  — Owner-only, rate-limited "Generate now".
+// Per the owner decision: max 3 manual runs/day/project.
+pipeline.post('/:projectId/runs', async (req, res) => {
+  const { projectId } = req.params;
+  const member = await findProjectByIdForMember(projectId, req.user!.id);
+  if (!member) {
+    res.status(404).json({ error: 'not_found' });
+    return;
+  }
+  if (member.role !== 'owner') {
+    res.status(403).json({ error: 'owner_only' });
+    return;
+  }
+  const limit = checkLimit(`run:${projectId}`, 3, 24 * 60 * 60 * 1000);
+  if (!limit.allowed) {
+    res.status(429).json({ error: 'rate_limited', resetAt: new Date(limit.resetAt).toISOString() });
+    return;
+  }
+  const { runId } = await triggerRuntimeRun({ projectId, triggeredByUserId: req.user!.id });
+  res.status(202).json({ runId, remaining: limit.remaining });
 });
 
 // GET /api/pipeline/:projectId/runs/:runId

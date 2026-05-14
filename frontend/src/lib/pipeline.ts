@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 
 export interface GraphNode {
@@ -56,6 +56,20 @@ export function useRuns(projectId: string | undefined) {
     queryKey: ['pipeline', 'runs', projectId],
     queryFn: () =>
       api<{ runs: AgentRun[]; monthlySpendUsd: number }>(`/api/pipeline/${projectId}/runs`),
+  });
+}
+
+export function useTriggerRun(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api<{ runId: string; remaining: number }>(`/api/pipeline/${projectId}/runs`, {
+        method: 'POST',
+      }),
+    onSuccess: () => {
+      // Refresh runs list immediately; live events will arrive via SSE.
+      qc.invalidateQueries({ queryKey: ['pipeline', 'runs', projectId] });
+    },
   });
 }
 

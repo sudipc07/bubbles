@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm';
 import { db } from '../db/index.js';
 import { agentEvents, agentRuns } from '../db/schema.js';
 import { newId } from '../lib/id.js';
@@ -33,8 +34,6 @@ export async function finishRun(runId: string, ok: boolean, error?: string): Pro
     .set({ status, finishedAt: new Date(), error: error ?? null })
     .where(eq(agentRuns.id, runId));
 }
-
-import { eq } from 'drizzle-orm';
 
 export interface RunAgentInput<I, O> {
   ctx: RunContext;

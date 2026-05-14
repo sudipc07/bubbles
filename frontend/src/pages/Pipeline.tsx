@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useRoute } from 'wouter';
-import { useGraph, useLivePipeline, useRuns } from '../lib/pipeline';
+import { ApiError } from '../lib/api';
+import { useGraph, useLivePipeline, useRuns, useTriggerRun } from '../lib/pipeline';
 import { PipelineGraphView } from '../components/PipelineGraph';
 
 export function PipelinePage() {
@@ -10,6 +11,8 @@ export function PipelinePage() {
   const graph = useGraph(pipelineId);
   const runs = useRuns(projectId);
   const { nodeStatus, lastEvent } = useLivePipeline(projectId);
+  const trigger = useTriggerRun(projectId);
+  const triggerError = trigger.error instanceof ApiError ? trigger.error.message : null;
 
   if (!projectId) return null;
 
@@ -43,13 +46,28 @@ export function PipelinePage() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
           <section>
-            <h2 className="text-lg font-semibold tracking-tight mb-3 capitalize">{pipelineId} graph</h2>
+            <div className="flex items-baseline justify-between mb-3">
+              <h2 className="text-lg font-semibold tracking-tight capitalize">{pipelineId} graph</h2>
+              {pipelineId === 'runtime' && (
+                <button
+                  onClick={() => trigger.mutate()}
+                  disabled={trigger.isPending}
+                  className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
+                >
+                  {trigger.isPending ? 'Starting…' : 'Run demo pipeline'}
+                </button>
+              )}
+            </div>
             {graph.isLoading && <p className="text-sm text-neutral-500">Loading graph…</p>}
             {graph.data && <PipelineGraphView graph={graph.data} nodeStatus={nodeStatus} />}
             <p className="text-xs text-neutral-500 mt-3">
-              Nodes pulse when running, turn green on completion, red on failure. Trigger an agent
-              run from the project page once the wizard is in place (Phase 4).
+              Nodes pulse when running, turn green on completion, red on failure. The demo pipeline
+              uses stub agents (no LLM calls) so you can watch the wiring end-to-end. Real agents
+              land in Phase 4.
             </p>
+            {triggerError && (
+              <p className="text-xs text-red-600 mt-2">Could not start run: {triggerError}</p>
+            )}
           </section>
 
           <aside className="space-y-4">
