@@ -5,6 +5,7 @@ import { auth } from './api/routes/auth.js';
 import { projects } from './api/routes/projects.js';
 import { pipeline } from './api/routes/pipeline.js';
 import { admin } from './api/routes/admin.js';
+import { setup } from './api/routes/setup.js';
 import { events } from './api/sse/events.js';
 import { attachUser } from './api/middleware/session.js';
 
@@ -18,6 +19,7 @@ app.use('/api', health);
 app.use('/api/auth', auth);
 app.use('/api/projects', projects);
 app.use('/api/pipeline', pipeline);
+app.use('/api/projects', setup); // mounts /api/projects/:projectId/setup
 app.use('/api/admin', admin);
 app.use('/api/events', events);
 

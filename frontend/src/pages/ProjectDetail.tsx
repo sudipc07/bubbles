@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useRoute } from 'wouter';
 import { api, ApiError } from '../lib/api';
 import { useUpdateBrief, type Project } from '../lib/projects';
+import { useRunSetup, useSetupOutputs } from '../lib/setup';
+import { SetupOutputsView } from '../components/SetupOutputs';
 
 const ALL_CHANNELS = ['linkedin', 'instagram'] as const;
 type Channel = (typeof ALL_CHANNELS)[number];
@@ -52,10 +54,66 @@ export function ProjectDetailPage() {
             </div>
 
             <BriefForm project={project} />
+            <hr className="my-10 border-neutral-200" />
+            <SetupSection project={project} />
           </>
         )}
       </main>
     </div>
+  );
+}
+
+function SetupSection({ project }: { project: Project }) {
+  const setup = useSetupOutputs(project.id);
+  const run = useRunSetup(project.id);
+  const briefReady = !!project.brief && project.brief.trim().length >= 30;
+
+  const errorMessage = run.error instanceof ApiError ? run.error.message : null;
+  const hasOutputs =
+    !!setup.data &&
+    (setup.data.audiences.length > 0 ||
+      setup.data.personas.length > 0 ||
+      setup.data.samples.length > 0 ||
+      !!setup.data.brandKit);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-baseline justify-between">
+        <div>
+          <h2 className="text-base font-semibold tracking-tight">Setup outputs</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">
+            Runs all 7 setup agents (Parser → Audience → Voice → Persona → Theme → Brand Kit →
+            Sample). About 5-10 seconds, ~$0.003 in LLM cost. Watch the graph live on the Pipeline
+            tab.
+          </p>
+        </div>
+        <button
+          onClick={() => run.mutate()}
+          disabled={!briefReady || run.isPending}
+          className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 whitespace-nowrap"
+          title={!briefReady ? 'Save a brief of at least 30 characters first' : undefined}
+        >
+          {run.isPending ? 'Starting…' : hasOutputs ? 'Re-run setup' : 'Run setup'}
+        </button>
+      </div>
+
+      {errorMessage && <p className="text-xs text-red-600">{errorMessage}</p>}
+      {!briefReady && (
+        <p className="text-xs text-amber-700">
+          Save a brief above (30+ characters) before running setup. The Parser needs something to
+          read.
+        </p>
+      )}
+
+      {setup.isLoading && <p className="text-xs text-neutral-500">Loading outputs…</p>}
+
+      {setup.data && hasOutputs && <SetupOutputsView data={setup.data} />}
+      {setup.data && !hasOutputs && (
+        <p className="text-xs text-neutral-400 italic">
+          No setup outputs yet. Click "Run setup" once your brief is in.
+        </p>
+      )}
+    </section>
   );
 }
 

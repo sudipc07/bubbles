@@ -110,6 +110,106 @@ export const projectMembers = pgTable(
   }),
 );
 
+// ───────── Setup outputs (audiences, voices, personas, themes, brand kit, samples) ─────────
+
+export const audiences = pgTable(
+  'audiences',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    summary: text('summary').notNull(),
+    traits: text('traits').array().notNull().default(sql`ARRAY[]::text[]`),
+    isSelected: boolean('is_selected').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byProject: index('audiences_project_idx').on(t.projectId) }),
+);
+
+export const voices = pgTable(
+  'voices',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    examples: text('examples').array().notNull().default(sql`ARRAY[]::text[]`),
+    isSelected: boolean('is_selected').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byProject: index('voices_project_idx').on(t.projectId) }),
+);
+
+export const personas = pgTable(
+  'personas',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    formatMixCarouselPct: integer('format_mix_carousel_pct').notNull().default(70),
+    formatMixSinglePct: integer('format_mix_single_pct').notNull().default(30),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byProject: index('personas_project_idx').on(t.projectId) }),
+);
+
+export const themes = pgTable(
+  'themes',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(),
+    description: text('description').notNull(),
+    exampleAngles: text('example_angles').array().notNull().default(sql`ARRAY[]::text[]`),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byProject: index('themes_project_idx').on(t.projectId) }),
+);
+
+export const brandKits = pgTable(
+  'brand_kits',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    palette: jsonb('palette').notNull(),       // { primary, secondary, accent, background, text }
+    fonts: jsonb('fonts').notNull(),           // { heading, body }
+    logoUrl: text('logo_url'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byProjectUnique: uniqueIndex('brand_kits_project_unique').on(t.projectId) }),
+);
+
+export const samples = pgTable(
+  'samples',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    personaId: text('persona_id')
+      .notNull()
+      .references(() => personas.id, { onDelete: 'cascade' }),
+    format: text('format', { enum: ['carousel', 'single_image'] }).notNull(),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({ byProject: index('samples_project_idx').on(t.projectId) }),
+);
+
 // ───────── Pipeline runs & instrumentation ─────────
 
 export const agentRuns = pgTable(
@@ -187,3 +287,9 @@ export type ProjectMember = typeof projectMembers.$inferSelect;
 export type AgentRun = typeof agentRuns.$inferSelect;
 export type AgentEvent = typeof agentEvents.$inferSelect;
 export type LlmCall = typeof llmCalls.$inferSelect;
+export type Audience = typeof audiences.$inferSelect;
+export type Voice = typeof voices.$inferSelect;
+export type Persona = typeof personas.$inferSelect;
+export type Theme = typeof themes.$inferSelect;
+export type BrandKit = typeof brandKits.$inferSelect;
+export type Sample = typeof samples.$inferSelect;
