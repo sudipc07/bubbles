@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { api } from '../lib/api';
 
@@ -16,6 +16,7 @@ interface Tenant {
 }
 
 export function AdminTenantsPage() {
+  const qc = useQueryClient();
   const tenants = useQuery({
     queryKey: ['admin', 'tenants'],
     queryFn: () => api<{ tenants: Tenant[] }>('/api/admin/tenants').then((r) => r.tenants),
@@ -23,6 +24,14 @@ export function AdminTenantsPage() {
   const costs = useQuery({
     queryKey: ['admin', 'costs', 'summary'],
     queryFn: () => api<{ last30d: number; last7d: number }>('/api/admin/costs/summary'),
+  });
+  const setStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: 'active' | 'paused' | 'archived' }) =>
+      api(`/api/admin/tenants/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });
 
   return (
@@ -82,7 +91,21 @@ export function AdminTenantsPage() {
                       </Td>
                       <Td className="text-neutral-600">{t.ownerEmail}</Td>
                       <Td>
-                        <StatusPill status={t.status} />
+                        <select
+                          value={t.status}
+                          disabled={setStatus.isPending}
+                          onChange={(e) =>
+                            setStatus.mutate({
+                              id: t.id,
+                              status: e.target.value as 'active' | 'paused' | 'archived',
+                            })
+                          }
+                          className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs"
+                        >
+                          <option value="active">active</option>
+                          <option value="paused">paused</option>
+                          <option value="archived">archived</option>
+                        </select>
                       </Td>
                       <Td className="text-right font-mono">${t.monthlySpendUsd.toFixed(2)}</Td>
                       <Td className="text-right font-mono text-neutral-500">${t.monthlyCostCeilingUsd}</Td>
@@ -127,17 +150,3 @@ function Td({ children, className }: { children: React.ReactNode; className?: st
   return <td className={`px-3 py-2 align-top ${className ?? ''}`}>{children}</td>;
 }
 
-function StatusPill({ status }: { status: 'active' | 'paused' | 'archived' }) {
-  const cls = {
-    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    paused: 'bg-amber-50 text-amber-700 border-amber-200',
-    archived: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-  }[status];
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${cls}`}
-    >
-      {status}
-    </span>
-  );
-}

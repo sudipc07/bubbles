@@ -1,6 +1,26 @@
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '../index.js';
-import { agentRuns, llmCalls, projects, users } from '../schema.js';
+import { agentRuns, llmCalls, projects, users, type Project } from '../schema.js';
+
+export type ProjectStatus = 'active' | 'paused' | 'archived';
+
+export async function adminSetProjectStatus(projectId: string, status: ProjectStatus): Promise<Project | undefined> {
+  const rows = await db
+    .update(projects)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(projects.id, projectId))
+    .returning();
+  return rows[0];
+}
+
+export async function adminSetCostCeiling(projectId: string, usd: number): Promise<Project | undefined> {
+  const rows = await db
+    .update(projects)
+    .set({ monthlyCostCeilingUsd: usd, updatedAt: new Date() })
+    .where(eq(projects.id, projectId))
+    .returning();
+  return rows[0];
+}
 
 export interface TenantRow {
   id: string;
