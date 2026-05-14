@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import {
   Background,
+  Position,
   ReactFlow,
   type Edge,
   type Node,
@@ -13,10 +14,10 @@ interface Props {
   nodeStatus: Record<string, NodeStatus>;
 }
 
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 60;
-const COL_GAP = 240;
-const ROW_GAP = 100;
+const NODE_WIDTH = 170;
+const NODE_HEIGHT = 56;
+const COL_GAP = 210;
+const ROW_GAP = 90;
 
 // Simple longest-path layering for a DAG: each node's column is 1 + max(parents).
 function layout(graph: PipelineGraph): Map<string, { x: number; y: number }> {
@@ -77,6 +78,8 @@ export function PipelineGraphView({ graph, nodeStatus }: Props) {
           position: positions.get(n.id) ?? { x: 0, y: 0 },
           data: { label: n.label, status, llm: n.llm },
           type: 'default',
+          sourcePosition: Position.Right,
+          targetPosition: Position.Left,
           width: NODE_WIDTH,
           height: NODE_HEIGHT,
           style: {
@@ -97,8 +100,11 @@ export function PipelineGraphView({ graph, nodeStatus }: Props) {
         id: `${e.from}-${e.to}-${i}`,
         source: e.from,
         target: e.to,
+        type: 'smoothstep',
         label: e.payload,
         labelStyle: { fontSize: 10, fill: '#737373' },
+        labelBgPadding: [4, 2],
+        labelBgStyle: { fill: '#fafafa', fillOpacity: 0.9 },
         style: { stroke: '#a3a3a3', strokeWidth: 1.5 },
       })),
     [graph.edges],
