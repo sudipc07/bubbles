@@ -52,8 +52,13 @@ pipeline.post('/:projectId/runs', async (req, res) => {
     res.status(429).json({ error: 'rate_limited', resetAt: new Date(limit.resetAt).toISOString() });
     return;
   }
-  const { runId } = await triggerRuntimeRun({ projectId, triggeredByUserId: req.user!.id });
-  res.status(202).json({ runId, remaining: limit.remaining });
+  try {
+    const { runId } = await triggerRuntimeRun({ project: member, triggeredByUserId: req.user!.id });
+    res.status(202).json({ runId, remaining: limit.remaining });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'run_failed';
+    res.status(400).json({ error: message });
+  }
 });
 
 // GET /api/pipeline/:projectId/runs/:runId

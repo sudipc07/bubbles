@@ -13,9 +13,10 @@ BRANCH="${BRANCH:-main}"
 
 cd "$REPO_DIR"
 
-echo "→ Pulling ${BRANCH}..."
-git fetch origin
+echo "→ Fetching ${BRANCH} (hard reset — no merge surprises)..."
+git fetch origin "${BRANCH}"
 git reset --hard "origin/${BRANCH}"
+git log --oneline -1
 
 echo "→ Installing dependencies..."
 pnpm install --frozen-lockfile

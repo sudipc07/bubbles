@@ -24,6 +24,14 @@ const schema = z.object({
   // Use for the platform owner only; treat the code as a secret.
   BYPASS_EMAIL: z.string().email().optional(),
   BYPASS_CODE: z.string().regex(/^\d{6}$/).optional(),
+
+  // Scheduler — runs the daily generation cron when SCHEDULER_ENABLED=true.
+  // Default false so no auto-runs happen until explicitly switched on.
+  SCHEDULER_ENABLED: z
+    .union([z.literal('true'), z.literal('false')])
+    .transform((v) => v === 'true')
+    .default('false'),
+  SCHEDULER_CRON: z.string().default('0 9 * * *'), // 09:00 UTC daily
 });
 
 export const env = schema.parse(process.env);

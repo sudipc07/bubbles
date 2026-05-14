@@ -108,8 +108,9 @@ export function PipelinePage() {
                   onClick={() => trigger.mutate()}
                   disabled={trigger.isPending}
                   className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
+                  title="Real LLM run — produces a Draft, ~$0.005 in tokens"
                 >
-                  {trigger.isPending ? 'Starting…' : 'Run demo pipeline'}
+                  {trigger.isPending ? 'Starting…' : 'Generate now'}
                 </button>
               </div>
             )}
@@ -117,8 +118,9 @@ export function PipelinePage() {
           {graph.isLoading && <p className="text-sm text-neutral-500">Loading graph…</p>}
           {graph.data && <PipelineGraphView graph={graph.data} nodeStatus={nodeStatus} />}
           <p className="text-xs text-neutral-500 mt-2">
-            Nodes pulse when running, turn green on completion, red on failure. Demo pipeline uses
-            stub agents (no LLM); real agents land in Phase 4.
+            Nodes pulse when running, turn green on completion, red on failure. A successful runtime
+            run produces a Draft in the Drafts queue. Setup must have been run first (so personas
+            and themes exist).
           </p>
         </section>
 

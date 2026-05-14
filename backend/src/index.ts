@@ -6,7 +6,9 @@ import { projects } from './api/routes/projects.js';
 import { pipeline } from './api/routes/pipeline.js';
 import { admin } from './api/routes/admin.js';
 import { setup } from './api/routes/setup.js';
+import { draftsRoutes } from './api/routes/drafts.js';
 import { events } from './api/sse/events.js';
+import { startScheduler } from './scheduler/index.js';
 import { attachUser } from './api/middleware/session.js';
 
 const app = express();
@@ -20,6 +22,7 @@ app.use('/api/auth', auth);
 app.use('/api/projects', projects);
 app.use('/api/pipeline', pipeline);
 app.use('/api/projects', setup); // mounts /api/projects/:projectId/setup
+app.use('/api/projects', draftsRoutes); // mounts /api/projects/:projectId/drafts...
 app.use('/api/admin', admin);
 app.use('/api/events', events);
 
@@ -33,4 +36,5 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 app.listen(env.PORT, () => {
   console.log(`[bubbles-api] listening on :${env.PORT} (${env.NODE_ENV})`);
+  startScheduler();
 });

@@ -29,12 +29,20 @@ export function ProjectDetailPage() {
             ← All projects
           </Link>
           {project && (
-            <Link
-              href={`/projects/${project.id}/pipeline`}
-              className="rounded-md border border-neutral-200 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
-            >
-              View pipeline →
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href={`/projects/${project.id}/drafts`}
+                className="rounded-md border border-neutral-200 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
+              >
+                Drafts
+              </Link>
+              <Link
+                href={`/projects/${project.id}/pipeline`}
+                className="rounded-md border border-neutral-200 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
+              >
+                Pipeline →
+              </Link>
+            </div>
           )}
         </div>
       </header>

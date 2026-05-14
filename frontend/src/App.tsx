@@ -4,6 +4,8 @@ import { LoginPage } from './pages/Login';
 import { ProjectsListPage } from './pages/ProjectsList';
 import { ProjectDetailPage } from './pages/ProjectDetail';
 import { PipelinePage } from './pages/Pipeline';
+import { DraftsPage } from './pages/Drafts';
+import { DraftDetailPage } from './pages/DraftDetail';
 import { AdminTenantsPage } from './pages/AdminTenants';
 
 export function App() {
@@ -32,6 +34,8 @@ function Gate() {
       <Route path="/" component={ProjectsListPage} />
       <Route path="/projects/:id" component={ProjectDetailPage} />
       <Route path="/projects/:id/pipeline" component={PipelinePage} />
+      <Route path="/projects/:id/drafts" component={DraftsPage} />
+      <Route path="/projects/:id/drafts/:draftId" component={DraftDetailPage} />
       <Route path="/admin">{user.isAdmin ? <AdminTenantsPage /> : <NotFound />}</Route>
       <Route>
         <NotFound />

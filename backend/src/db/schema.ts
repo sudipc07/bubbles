@@ -210,6 +210,60 @@ export const samples = pgTable(
   (t) => ({ byProject: index('samples_project_idx').on(t.projectId) }),
 );
 
+// ───────── Drafts (what the runtime pipeline produces) ─────────
+
+export const drafts = pgTable(
+  'drafts',
+  {
+    id: text('id').primaryKey(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    runId: text('run_id'), // populated when the producing run exists; nullable for backfill
+    personaId: text('persona_id').references(() => personas.id, { onDelete: 'set null' }),
+    themeId: text('theme_id').references(() => themes.id, { onDelete: 'set null' }),
+    format: text('format', { enum: ['carousel', 'single_image'] }).notNull(),
+    topicTitle: text('topic_title').notNull(),
+    angle: text('angle'),
+    kind: text('kind', { enum: ['utility', 'promo'] }).notNull().default('utility'),
+    status: text('status', { enum: ['pending', 'approved', 'rejected', 'posted'] }).notNull().default('pending'),
+    empathyVerdict: text('empathy_verdict', { enum: ['helpful', 'performative', 'tone_deaf'] }),
+    safetyVerdict: text('safety_verdict', { enum: ['pass', 'fail'] }),
+    safetyReasons: text('safety_reasons').array().notNull().default(sql`ARRAY[]::text[]`),
+    linkedinCaption: text('linkedin_caption'),
+    instagramCaption: text('instagram_caption'),
+    decidedByUserId: text('decided_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+    decidedAt: timestamp('decided_at', { withTimezone: true }),
+    postedAt: timestamp('posted_at', { withTimezone: true }),
+    postedUrl: text('posted_url'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    byProjectStatus: index('drafts_project_status_idx').on(t.projectId, t.status, sql`${t.createdAt} desc`),
+    byKindForRatio: index('drafts_project_kind_created_idx').on(t.projectId, t.kind, sql`${t.createdAt} desc`),
+  }),
+);
+
+export const draftSlides = pgTable(
+  'draft_slides',
+  {
+    id: text('id').primaryKey(),
+    draftId: text('draft_id')
+      .notNull()
+      .references(() => drafts.id, { onDelete: 'cascade' }),
+    slideIndex: integer('slide_index').notNull(),
+    kind: text('kind', {
+      enum: ['cover', 'bullet-list', 'quote', 'stat', 'cta', 'body'],
+    }).notNull(),
+    title: text('title'),
+    body: text('body').notNull(),
+    imageUrl: text('image_url'),
+  },
+  (t) => ({
+    byDraft: index('draft_slides_draft_idx').on(t.draftId, t.slideIndex),
+  }),
+);
+
 // ───────── Pipeline runs & instrumentation ─────────
 
 export const agentRuns = pgTable(
@@ -293,3 +347,5 @@ export type Persona = typeof personas.$inferSelect;
 export type Theme = typeof themes.$inferSelect;
 export type BrandKit = typeof brandKits.$inferSelect;
 export type Sample = typeof samples.$inferSelect;
+export type Draft = typeof drafts.$inferSelect;
+export type DraftSlide = typeof draftSlides.$inferSelect;
