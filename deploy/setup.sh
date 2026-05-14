@@ -98,6 +98,9 @@ fi
 step "Install dependencies + build"
 sudo -u "$APP_USER" bash -lc "cd ${REPO_DIR} && pnpm install --frozen-lockfile && pnpm run build"
 
+step "Apply database schema (drizzle push)"
+sudo -u "$APP_USER" bash -lc "cd ${REPO_DIR} && set -a && . ${ENV_FILE} && set +a && pnpm --filter @bubbles/backend run db:push"
+
 step "Publish frontend to ${FRONTEND_DIR}"
 mkdir -p "$FRONTEND_DIR"
 rm -rf "${FRONTEND_DIR:?}"/*

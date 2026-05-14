@@ -4,6 +4,7 @@ import { health } from './api/routes/health.js';
 import { auth } from './api/routes/auth.js';
 import { projects } from './api/routes/projects.js';
 import { pipeline } from './api/routes/pipeline.js';
+import { admin } from './api/routes/admin.js';
 import { events } from './api/sse/events.js';
 import { attachUser } from './api/middleware/session.js';
 
@@ -17,6 +18,7 @@ app.use('/api', health);
 app.use('/api/auth', auth);
 app.use('/api/projects', projects);
 app.use('/api/pipeline', pipeline);
+app.use('/api/admin', admin);
 app.use('/api/events', events);
 
 app.use((_req, res) => res.status(404).json({ error: 'not_found' }));

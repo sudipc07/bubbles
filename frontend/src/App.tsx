@@ -4,6 +4,7 @@ import { LoginPage } from './pages/Login';
 import { ProjectsListPage } from './pages/ProjectsList';
 import { ProjectDetailPage } from './pages/ProjectDetail';
 import { PipelinePage } from './pages/Pipeline';
+import { AdminTenantsPage } from './pages/AdminTenants';
 
 export function App() {
   return (
@@ -31,11 +32,18 @@ function Gate() {
       <Route path="/" component={ProjectsListPage} />
       <Route path="/projects/:id" component={ProjectDetailPage} />
       <Route path="/projects/:id/pipeline" component={PipelinePage} />
+      <Route path="/admin">{user.isAdmin ? <AdminTenantsPage /> : <NotFound />}</Route>
       <Route>
-        <main className="min-h-screen flex items-center justify-center">
-          <p className="text-sm text-neutral-500">Not found.</p>
-        </main>
+        <NotFound />
       </Route>
     </Switch>
+  );
+}
+
+function NotFound() {
+  return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-sm text-neutral-500">Not found.</p>
+    </main>
   );
 }
