@@ -3,6 +3,8 @@ import { env } from './config/env.js';
 import { health } from './api/routes/health.js';
 import { auth } from './api/routes/auth.js';
 import { projects } from './api/routes/projects.js';
+import { pipeline } from './api/routes/pipeline.js';
+import { events } from './api/sse/events.js';
 import { attachUser } from './api/middleware/session.js';
 
 const app = express();
@@ -14,6 +16,8 @@ app.use(attachUser);
 app.use('/api', health);
 app.use('/api/auth', auth);
 app.use('/api/projects', projects);
+app.use('/api/pipeline', pipeline);
+app.use('/api/events', events);
 
 app.use((_req, res) => res.status(404).json({ error: 'not_found' }));
 

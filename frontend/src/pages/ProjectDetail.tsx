@@ -31,15 +31,27 @@ export function ProjectDetailPage() {
         )}
         {query.data && (
           <>
-            <h1 className="text-3xl font-semibold tracking-tight">{query.data.name}</h1>
-            <p className="text-sm text-neutral-500 font-mono mt-1">{query.data.slug}</p>
+            <div className="flex items-baseline justify-between">
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight">{query.data.name}</h1>
+                <p className="text-sm text-neutral-500 font-mono mt-1">{query.data.slug}</p>
+              </div>
+              <Link
+                href={`/projects/${query.data.id}/pipeline`}
+                className="rounded-md border border-neutral-200 px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+              >
+                View pipeline →
+              </Link>
+            </div>
 
             <section className="mt-8 rounded-lg border border-neutral-200 p-6">
               <p className="text-sm text-neutral-600">
-                The setup wizard and pipeline view ship in Phase 4. For now this project exists in
-                the database with status{' '}
-                <span className="font-mono">{query.data.status}</span> and a monthly cost ceiling
-                of ${query.data.monthlyCostCeilingUsd}.
+                Status: <span className="font-mono">{query.data.status}</span> · Monthly cost
+                ceiling: <span className="font-mono">${query.data.monthlyCostCeilingUsd}</span>
+              </p>
+              <p className="text-xs text-neutral-500 mt-3">
+                Setup wizard ships in Phase 4. The pipeline graph above is already wired up and
+                will populate live as agents run.
               </p>
             </section>
           </>

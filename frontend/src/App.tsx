@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './lib/auth';
 import { LoginPage } from './pages/Login';
 import { ProjectsListPage } from './pages/ProjectsList';
 import { ProjectDetailPage } from './pages/ProjectDetail';
+import { PipelinePage } from './pages/Pipeline';
 
 export function App() {
   return (
@@ -29,6 +30,7 @@ function Gate() {
     <Switch>
       <Route path="/" component={ProjectsListPage} />
       <Route path="/projects/:id" component={ProjectDetailPage} />
+      <Route path="/projects/:id/pipeline" component={PipelinePage} />
       <Route>
         <main className="min-h-screen flex items-center justify-center">
           <p className="text-sm text-neutral-500">Not found.</p>
