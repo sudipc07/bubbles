@@ -1,0 +1,19 @@
+{
+  "name": "bubbles",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r --parallel run dev",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "pnpm -r run lint",
+    "db:push": "pnpm --filter @bubbles/backend run db:push",
+    "db:studio": "pnpm --filter @bubbles/backend run db:studio"
+  },
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.12.0"
+}
