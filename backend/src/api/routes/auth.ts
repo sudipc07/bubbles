@@ -1,11 +1,23 @@
 import { Router } from 'express';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { generateLoginCode, hashCode, LOGIN_CODE_MAX_ATTEMPTS } from '../../lib/codes.js';
 import { findLatestActiveCode, incrementAttempts, insertLoginCode, markCodeUsed } from '../../db/repos/loginCodes.js';
 import { upsertUserByEmail } from '../../db/repos/users.js';
 import { createSession, deleteSession, SESSION_TTL_MS } from '../../db/repos/sessions.js';
 import { loginCodeEmail, sendEmail } from '../../email/ses.js';
+import { db } from '../../db/index.js';
+import { users } from '../../db/schema.js';
+import { env } from '../../config/env.js';
 import { clearSessionCookie, requireUser, setSessionCookie } from '../middleware/session.js';
+
+function isBypassEmail(email: string): boolean {
+  return (
+    !!env.BYPASS_EMAIL &&
+    !!env.BYPASS_CODE &&
+    email.trim().toLowerCase() === env.BYPASS_EMAIL.toLowerCase()
+  );
+}
 
 export const auth = Router();
 
@@ -18,6 +30,14 @@ auth.post('/request-code', async (req, res) => {
     return;
   }
   const email = parsed.data.email.trim();
+
+  // Bypass path: don't touch SES or the login_codes table; the verify step
+  // will accept the pre-shared BYPASS_CODE directly.
+  if (isBypassEmail(email)) {
+    res.json({ ok: true, bypass: true });
+    return;
+  }
+
   const code = generateLoginCode();
   await insertLoginCode(email, hashCode(code));
   try {
@@ -42,6 +62,24 @@ auth.post('/verify', async (req, res) => {
     return;
   }
   const { email, code } = parsed.data;
+
+  // Bypass path: exact email + exact BYPASS_CODE → admin user, no DB code check.
+  if (isBypassEmail(email)) {
+    if (code !== env.BYPASS_CODE) {
+      res.status(400).json({ error: 'invalid_code' });
+      return;
+    }
+    const user = await upsertUserByEmail(email);
+    if (!user.isAdmin) {
+      await db.update(users).set({ isAdmin: true }).where(eq(users.id, user.id));
+      user.isAdmin = true;
+    }
+    const session = await createSession(user.id);
+    setSessionCookie(res, session.id, SESSION_TTL_MS);
+    res.json({ ok: true, user: { id: user.id, email: user.email, isAdmin: true }, bypass: true });
+    return;
+  }
+
   const record = await findLatestActiveCode(email);
   if (!record) {
     res.status(400).json({ error: 'no_active_code' });

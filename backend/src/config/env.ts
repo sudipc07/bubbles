@@ -18,6 +18,12 @@ const schema = z.object({
   OPENAI_API_KEY: z.string().optional(),
 
   DEFAULT_MONTHLY_COST_CEILING_USD: z.coerce.number().default(20),
+
+  // Login bypass. If both are set, the exact email + code pair verifies without
+  // hitting SES or the login_codes table, and the resulting user is is_admin.
+  // Use for the platform owner only; treat the code as a secret.
+  BYPASS_EMAIL: z.string().email().optional(),
+  BYPASS_CODE: z.string().regex(/^\d{6}$/).optional(),
 });
 
 export const env = schema.parse(process.env);
