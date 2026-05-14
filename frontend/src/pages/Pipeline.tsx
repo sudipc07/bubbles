@@ -19,7 +19,7 @@ export function PipelinePage() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-neutral-200">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between text-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between text-sm">
           <div className="flex items-center gap-4">
             <Link href={`/projects/${projectId}`} className="text-neutral-500 hover:text-neutral-900">
               ← Project
@@ -43,12 +43,67 @@ export function PipelinePage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-          <section>
-            <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-lg font-semibold tracking-tight capitalize">{pipelineId} graph</h2>
-              {pipelineId === 'runtime' && (
+      <main className="max-w-7xl mx-auto px-6 py-6 space-y-4">
+        {/* Top stat strip */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <StatCard label="Last event">
+            {lastEvent ? (
+              <div className="flex items-baseline justify-between gap-2">
+                <div>
+                  <span className="font-medium">{lastEvent.agentName}</span>
+                  <span className="ml-2 font-mono text-xs text-neutral-500">{lastEvent.eventType}</span>
+                </div>
+                <span className="text-xs text-neutral-500 whitespace-nowrap">
+                  {new Date(lastEvent.at).toLocaleTimeString()}
+                  {lastEvent.durationMs != null && ` · ${lastEvent.durationMs}ms`}
+                </span>
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400">No events yet. SSE connected.</p>
+            )}
+          </StatCard>
+
+          <StatCard label="Recent runs">
+            {runs.data && runs.data.runs.length > 0 ? (
+              <div className="flex items-center gap-1.5">
+                {runs.data.runs.slice(0, 12).map((r) => (
+                  <span
+                    key={r.id}
+                    title={`${r.id.slice(0, 8)} · ${r.status}`}
+                    className={`inline-block h-2.5 w-2.5 rounded-full ${
+                      r.status === 'completed'
+                        ? 'bg-emerald-500'
+                        : r.status === 'failed'
+                          ? 'bg-red-500'
+                          : 'bg-blue-500 animate-pulse'
+                    }`}
+                  />
+                ))}
+                <span className="ml-2 text-xs text-neutral-500">
+                  {runs.data.runs.length} total
+                </span>
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400">No runs yet.</p>
+            )}
+          </StatCard>
+
+          <StatCard label="30-day spend">
+            <span className="font-mono text-lg">
+              ${runs.data?.monthlySpendUsd?.toFixed(4) ?? '—'}
+            </span>
+          </StatCard>
+        </section>
+
+        {/* Full-width graph */}
+        <section>
+          <div className="flex items-baseline justify-between mb-2">
+            <h2 className="text-base font-semibold tracking-tight capitalize">{pipelineId} graph</h2>
+            {pipelineId === 'runtime' && (
+              <div className="flex items-center gap-3">
+                {triggerError && (
+                  <span className="text-xs text-red-600">{triggerError}</span>
+                )}
                 <button
                   onClick={() => trigger.mutate()}
                   disabled={trigger.isPending}
@@ -56,78 +111,75 @@ export function PipelinePage() {
                 >
                   {trigger.isPending ? 'Starting…' : 'Run demo pipeline'}
                 </button>
-              )}
-            </div>
-            {graph.isLoading && <p className="text-sm text-neutral-500">Loading graph…</p>}
-            {graph.data && <PipelineGraphView graph={graph.data} nodeStatus={nodeStatus} />}
-            <p className="text-xs text-neutral-500 mt-3">
-              Nodes pulse when running, turn green on completion, red on failure. The demo pipeline
-              uses stub agents (no LLM calls) so you can watch the wiring end-to-end. Real agents
-              land in Phase 4.
-            </p>
-            {triggerError && (
-              <p className="text-xs text-red-600 mt-2">Could not start run: {triggerError}</p>
+              </div>
             )}
-          </section>
+          </div>
+          {graph.isLoading && <p className="text-sm text-neutral-500">Loading graph…</p>}
+          {graph.data && <PipelineGraphView graph={graph.data} nodeStatus={nodeStatus} />}
+          <p className="text-xs text-neutral-500 mt-2">
+            Nodes pulse when running, turn green on completion, red on failure. Demo pipeline uses
+            stub agents (no LLM); real agents land in Phase 4.
+          </p>
+        </section>
 
-          <aside className="space-y-4">
-            <div className="rounded-lg border border-neutral-200 p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
-                Last event
-              </h3>
-              {lastEvent ? (
-                <div className="text-sm space-y-1">
-                  <p>
-                    <span className="font-mono text-neutral-500">{lastEvent.eventType}</span>{' '}
-                    <span className="font-medium">{lastEvent.agentName}</span>
-                  </p>
-                  <p className="text-xs text-neutral-500">
-                    {new Date(lastEvent.at).toLocaleTimeString()}
-                    {lastEvent.durationMs != null && ` · ${lastEvent.durationMs}ms`}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-xs text-neutral-400">No events yet. SSE connected.</p>
-              )}
-            </div>
-
-            <div className="rounded-lg border border-neutral-200 p-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
-                Runs (last 25)
-              </h3>
-              {runs.isLoading && <p className="text-xs text-neutral-500">Loading…</p>}
-              {runs.data && runs.data.runs.length === 0 && (
-                <p className="text-xs text-neutral-400">No runs yet.</p>
-              )}
-              {runs.data && runs.data.runs.length > 0 && (
-                <ul className="space-y-1.5 text-xs">
+        {/* Runs list */}
+        {runs.data && runs.data.runs.length > 0 && (
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+              Run history
+            </h2>
+            <div className="rounded-lg border border-neutral-200 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium">Run</th>
+                    <th className="text-left px-3 py-2 font-medium">Started</th>
+                    <th className="text-left px-3 py-2 font-medium">Finished</th>
+                    <th className="text-left px-3 py-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200">
                   {runs.data.runs.map((r) => (
-                    <li key={r.id} className="flex justify-between">
-                      <span className="font-mono text-neutral-500">{r.id.slice(0, 8)}</span>
-                      <span
-                        className={
-                          r.status === 'completed'
-                            ? 'text-emerald-700'
-                            : r.status === 'failed'
-                              ? 'text-red-700'
-                              : 'text-blue-700'
-                        }
-                      >
-                        {r.status}
-                      </span>
-                    </li>
+                    <tr key={r.id} className="hover:bg-neutral-50">
+                      <td className="px-3 py-2 font-mono text-xs">{r.id.slice(0, 8)}</td>
+                      <td className="px-3 py-2 text-xs text-neutral-600">
+                        {new Date(r.startedAt).toLocaleString()}
+                      </td>
+                      <td className="px-3 py-2 text-xs text-neutral-600">
+                        {r.finishedAt ? new Date(r.finishedAt).toLocaleString() : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-xs">
+                        <span
+                          className={
+                            r.status === 'completed'
+                              ? 'text-emerald-700'
+                              : r.status === 'failed'
+                                ? 'text-red-700'
+                                : 'text-blue-700'
+                          }
+                        >
+                          {r.status}
+                        </span>
+                      </td>
+                    </tr>
                   ))}
-                </ul>
-              )}
-              {runs.data && (
-                <p className="mt-3 text-xs text-neutral-500">
-                  30-day spend: <span className="font-mono">${runs.data.monthlySpendUsd.toFixed(4)}</span>
-                </p>
-              )}
+                </tbody>
+              </table>
             </div>
-          </aside>
-        </div>
+          </section>
+        )}
       </main>
+    </div>
+  );
+}
+
+function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-neutral-200 p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-1.5">
+        {label}
+      </p>
+      {children}
     </div>
   );
 }

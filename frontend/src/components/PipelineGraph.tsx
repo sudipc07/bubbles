@@ -111,16 +111,17 @@ export function PipelineGraphView({ graph, nodeStatus }: Props) {
   );
 
   return (
-    <div className="h-[600px] w-full rounded-lg border border-neutral-200 bg-neutral-50">
+    <div className="h-[380px] w-full rounded-lg border border-neutral-200 bg-neutral-50">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.15 }}
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}
         zoomOnDoubleClick={false}
+        panOnDrag
       >
         <Background gap={20} size={1} color="#e5e5e5" />
       </ReactFlow>
