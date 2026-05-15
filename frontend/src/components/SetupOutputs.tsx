@@ -24,6 +24,17 @@ export function SetupOutputsView({ data, projectId }: ViewProps) {
 
   return (
     <div className="space-y-8">
+      <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-xs leading-relaxed text-amber-900">
+        <p className="font-semibold mb-1">What this section is — and isn't</p>
+        <p>
+          Setup produces the <em>configuration</em> for this brand: audiences, voices, personas,
+          themes, and a brand kit. Plus 10 sample posts (2 per persona) so you can see what each
+          persona will write like. <strong>Sample posts are never published</strong> and don't
+          appear in the Drafts queue — they're previews to help you decide whether to keep each
+          persona. Real drafts come from the <em>runtime</em> pipeline (Pipeline tab → Generate
+          now), which lands in <em>Drafts</em>.
+        </p>
+      </div>
       {data.brandKit && <BrandKitCard kit={data.brandKit} projectId={projectId} />}
       {data.audiences.length > 0 && <AudiencesSection audiences={data.audiences} projectId={projectId} />}
       {data.voices.length > 0 && <VoicesSection voices={data.voices} projectId={projectId} />}
@@ -294,19 +305,24 @@ function PersonasSection({
               </div>
               <p className="text-sm text-neutral-600">{p.description}</p>
               {personaSamples.length > 0 && (
-                <div className="mt-3 grid md:grid-cols-2 gap-2">
-                  {personaSamples.map((s) => (
-                    <div key={s.id} className="rounded-md bg-neutral-50 border border-neutral-200 p-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
-                        {s.format.replace('_', ' ')}
-                      </p>
-                      <p className="text-sm font-medium mt-0.5">{s.title}</p>
-                      <p className="mt-1 text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">
-                        {s.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+                <>
+                  <p className="mt-4 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                    Sample posts · preview only · never published
+                  </p>
+                  <div className="mt-1 grid md:grid-cols-2 gap-2">
+                    {personaSamples.map((s) => (
+                      <div key={s.id} className="rounded-md bg-amber-50/40 border border-amber-100 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+                          {s.format.replace('_', ' ')}
+                        </p>
+                        <p className="text-sm font-medium mt-0.5">{s.title}</p>
+                        <p className="mt-1 text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                          {s.body}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           );
