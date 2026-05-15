@@ -36,11 +36,12 @@ export async function findProjectByIdForMember(
 export async function updateProjectBrief(
   projectId: string,
   ownerUserId: string,
-  patch: { brief?: string | null; logoUrl?: string | null; channels?: string[] },
+  patch: { brief?: string | null; logoUrl?: string | null; publicUrl?: string | null; channels?: string[] },
 ): Promise<Project | undefined> {
   const updates: Partial<typeof projects.$inferInsert> = { updatedAt: new Date() };
   if (patch.brief !== undefined) updates.brief = patch.brief;
   if (patch.logoUrl !== undefined) updates.logoUrl = patch.logoUrl;
+  if (patch.publicUrl !== undefined) updates.publicUrl = patch.publicUrl;
   if (patch.channels !== undefined) updates.channels = patch.channels;
 
   const rows = await db

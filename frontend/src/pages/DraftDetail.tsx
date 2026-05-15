@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useRoute } from 'wouter';
+import { api } from '../lib/api';
 import { useDecideDraft, useDraft, useMarkPosted } from '../lib/drafts';
+import type { Project } from '../lib/projects';
 import { useSetupOutputs } from '../lib/setup';
 import { SlidePreview } from '../components/SlidePreview';
 
@@ -10,6 +13,11 @@ export function DraftDetailPage() {
   const draftId = params?.draftId;
   const query = useDraft(projectId, draftId);
   const setupOutputs = useSetupOutputs(projectId);
+  const projectQuery = useQuery({
+    enabled: !!projectId,
+    queryKey: ['projects', projectId],
+    queryFn: () => api<{ project: Project }>(`/api/projects/${projectId}`).then((r) => r.project),
+  });
   const decide = useDecideDraft(projectId, draftId);
   const post = useMarkPosted(projectId, draftId);
   const [postUrl, setPostUrl] = useState('');
@@ -100,6 +108,8 @@ export function DraftDetailPage() {
                       totalSlides={query.data!.slides.length}
                       kit={setupOutputs.data?.brandKit ?? null}
                       format={query.data!.draft.format}
+                      projectName={projectQuery.data?.name ?? ''}
+                      publicUrl={projectQuery.data?.publicUrl ?? null}
                     />
                     <p className="mt-1.5 text-[10px] uppercase tracking-wide text-neutral-400">
                       Slide {s.slideIndex + 1} · {s.kind}

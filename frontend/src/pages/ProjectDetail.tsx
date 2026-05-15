@@ -237,6 +237,7 @@ function BriefForm({ project }: { project: Project }) {
   const update = useUpdateBrief(project.id);
   const [brief, setBrief] = useState(project.brief ?? '');
   const [logoUrl, setLogoUrl] = useState(project.logoUrl ?? '');
+  const [publicUrl, setPublicUrl] = useState(project.publicUrl ?? '');
   const [channels, setChannels] = useState<Channel[]>(
     (project.channels.filter((c) => ALL_CHANNELS.includes(c as Channel)) as Channel[]) ?? [
       'linkedin',
@@ -249,8 +250,9 @@ function BriefForm({ project }: { project: Project }) {
   useEffect(() => {
     setBrief(project.brief ?? '');
     setLogoUrl(project.logoUrl ?? '');
+    setPublicUrl(project.publicUrl ?? '');
     setChannels(project.channels.filter((c) => ALL_CHANNELS.includes(c as Channel)) as Channel[]);
-  }, [project.id, project.brief, project.logoUrl, project.channels]);
+  }, [project.id, project.brief, project.logoUrl, project.publicUrl, project.channels]);
 
   const toggleChannel = (ch: Channel) => {
     setChannels((prev) => (prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]));
@@ -262,6 +264,7 @@ function BriefForm({ project }: { project: Project }) {
       await update.mutateAsync({
         brief: brief.trim() === '' ? null : brief,
         logoUrl: logoUrl.trim() === '' ? null : logoUrl.trim(),
+        publicUrl: publicUrl.trim() === '' ? null : publicUrl.trim(),
         channels,
       });
       setSaved(true);
@@ -274,6 +277,7 @@ function BriefForm({ project }: { project: Project }) {
   const dirty =
     (project.brief ?? '') !== brief ||
     (project.logoUrl ?? '') !== logoUrl.trim() ||
+    (project.publicUrl ?? '') !== publicUrl.trim() ||
     project.channels.slice().sort().join(',') !== channels.slice().sort().join(',');
 
   const errorMessage = update.error instanceof ApiError ? update.error.message : null;
@@ -331,6 +335,23 @@ Anything else worth knowing — past content, off-limits topics, competitors to 
             <span className="text-xs text-neutral-500">preview</span>
           </div>
         )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1.5" htmlFor="publicUrl">
+          Public URL
+        </label>
+        <input
+          id="publicUrl"
+          type="url"
+          value={publicUrl}
+          onChange={(e) => setPublicUrl(e.target.value)}
+          placeholder="https://resume-folio.app"
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+        />
+        <p className="mt-1 text-xs text-neutral-500">
+          Appears at the bottom of CTA slides and on the project lockup. Leave blank to omit.
+        </p>
       </div>
 
       <div>

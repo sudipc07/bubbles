@@ -41,6 +41,7 @@ projects.get('/:id', async (req, res) => {
 const briefSchema = z.object({
   brief: z.string().max(50_000).nullable().optional(),
   logoUrl: z.string().url().max(2048).nullable().optional(),
+  publicUrl: z.string().url().max(2048).nullable().optional(),
   channels: z.array(z.enum(['linkedin', 'instagram'])).min(1).optional(),
 });
 

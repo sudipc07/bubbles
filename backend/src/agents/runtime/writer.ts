@@ -63,6 +63,7 @@ export async function write(
         'You are a senior writer. Produce a single post draft as structured slides. ' +
         'No em-dashes between sentences. Australian/British English. ' +
         'Be useful, not promotional. Do not invent statistics. ' +
+        'Headlines on cover slides, single-image slides, and CTA slides may use **double asterisks** to highlight 1-3 key words in the brand accent colour — use this sparingly for emphasis (e.g. "What\'s your **ATS score**?"). Do not asterisk-wrap body text. ' +
         'Return ONLY valid JSON matching the format-specific schema.',
       user:
         `Persona: ${input.plan.persona.name} — ${input.plan.persona.description}\n` +

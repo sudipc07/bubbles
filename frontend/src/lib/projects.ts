@@ -10,6 +10,7 @@ export interface Project {
   monthlyCostCeilingUsd: number;
   brief: string | null;
   logoUrl: string | null;
+  publicUrl: string | null;
   channels: string[];
   createdAt: string;
   updatedAt: string;
@@ -19,6 +20,7 @@ export interface Project {
 export interface BriefPatch {
   brief?: string | null;
   logoUrl?: string | null;
+  publicUrl?: string | null;
   channels?: ('linkedin' | 'instagram')[];
 }
 

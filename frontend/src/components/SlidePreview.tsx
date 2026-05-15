@@ -6,37 +6,42 @@ interface Props {
   totalSlides: number;
   kit: BrandKit | null;
   format: 'carousel' | 'single_image';
+  projectName: string;
+  publicUrl: string | null;
 }
 
 /**
  * Slide preview rendered at its TRUE pixel dimensions (1080×1080 for single,
- * 1080×1350 for carousel), then visually shrunk via CSS transform so the
- * operator sees exactly what the post will look like — without the false
- * wrapping the old relative-size layout introduced.
+ * 1080×1350 for carousel) and visually scaled to fit. Operator sees exactly
+ * what the post will look like.
  *
- * Brand kit values inject as CSS custom properties; templates use only
- * those (plus a logo if logoUrl is set). This is the same shape the
- * server-side Designer (Phase 5) will render — when Playwright lands, this
- * component IS the source of truth.
+ * Brand kit injects via CSS custom properties. The same templates will become
+ * the server-side Designer output when Playwright lands (Phase 5).
+ *
+ * Layout strategy: single_image (always) and cta-kind in carousels render as
+ * a centred "hero card" — logo lockup top, oversized headline, accent divider,
+ * concise body, optional CTA + URL at the bottom. Other carousel kinds keep
+ * their information-dense left-aligned layouts.
  */
-export function SlidePreview({ slide, totalSlides, kit, format }: Props) {
+export function SlidePreview({ slide, totalSlides, kit, format, projectName, publicUrl }: Props) {
   const palette = kit?.palette ?? defaultPalette;
   const fonts = kit?.fonts ?? { heading: 'Inter', body: 'Inter' };
 
-  // Native pixel dimensions of the produced asset
   const W = 1080;
   const H = format === 'carousel' ? 1350 : 1080;
 
   const styleVars: React.CSSProperties = {
-    // Brand kit injection
     ['--brand-primary' as never]: palette.primary,
     ['--brand-secondary' as never]: palette.secondary,
     ['--brand-accent' as never]: palette.accent,
     ['--brand-background' as never]: palette.background,
     ['--brand-text' as never]: palette.text,
-    ['--brand-font-heading' as never]: `'${fonts.heading}', sans-serif`,
+    ['--brand-font-heading' as never]: `'${fonts.heading}', serif`,
     ['--brand-font-body' as never]: `'${fonts.body}', sans-serif`,
   };
+
+  // Hero layout for single_image (every slide) and for cta-kind in carousels.
+  const isHero = format === 'single_image' || slide.kind === 'cta' || slide.kind === 'cover';
 
   return (
     <div
@@ -45,16 +50,7 @@ export function SlidePreview({ slide, totalSlides, kit, format }: Props) {
     >
       <div
         className="absolute top-0 left-0 origin-top-left"
-        style={{
-          width: W,
-          height: H,
-          transform: 'scale(var(--scale))',
-          // CSS-level scale: container queries would be cleaner but this works
-          // everywhere. The container's width controls render size; we compute
-          // scale from clientWidth / W using a CSS variable.
-          // Trick: scale is set via inline style on the inner content using
-          // 100cqw / 1080 via container query if available; fall back to JS.
-        }}
+        style={{ width: W, height: H, transform: 'scale(var(--scale))' }}
         ref={(el) => {
           if (!el) return;
           const ro = new ResizeObserver(() => {
@@ -67,103 +63,180 @@ export function SlidePreview({ slide, totalSlides, kit, format }: Props) {
           if (parent) ro.observe(parent);
         }}
       >
-        <SlideCanvas slide={slide} totalSlides={totalSlides} kit={kit} styleVars={styleVars} />
+        <div
+          className="w-full h-full relative"
+          style={{
+            ...styleVars,
+            backgroundColor: 'var(--brand-background)',
+            color: 'var(--brand-text)',
+            fontFamily: 'var(--brand-font-body)',
+          }}
+        >
+          {isHero ? (
+            <HeroLayout
+              slide={slide}
+              totalSlides={totalSlides}
+              kit={kit}
+              projectName={projectName}
+              publicUrl={publicUrl}
+            />
+          ) : (
+            <ContentLayout
+              slide={slide}
+              totalSlides={totalSlides}
+              kit={kit}
+              projectName={projectName}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function SlideCanvas({
+// ───────── Hero layout (single image, covers, CTAs) ─────────
+
+function HeroLayout({
   slide,
   totalSlides,
   kit,
-  styleVars,
+  projectName,
+  publicUrl,
 }: {
   slide: DraftSlide;
   totalSlides: number;
   kit: BrandKit | null;
-  styleVars: React.CSSProperties;
+  projectName: string;
+  publicUrl: string | null;
+}) {
+  const isCta = slide.kind === 'cta';
+  const isCover = slide.kind === 'cover';
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-between px-[120px] py-[100px]">
+      <BrandLockup logoUrl={kit?.logoUrl ?? null} projectName={projectName} />
+
+      <div className="flex-1 flex flex-col items-center justify-center text-center max-w-[840px] mx-auto">
+        {isCover && (
+          <p
+            className="text-[26px] uppercase tracking-[0.3em] mb-[36px] font-medium"
+            style={{ color: 'var(--brand-accent)' }}
+          >
+            Carousel
+          </p>
+        )}
+
+        {slide.title && (
+          <HeadlineWithAccent
+            text={slide.title}
+            className="font-bold leading-[1.05]"
+            style={{
+              fontFamily: 'var(--brand-font-heading)',
+              color: 'var(--brand-primary)',
+              fontSize: isCover ? 92 : 110,
+            }}
+          />
+        )}
+
+        <Divider />
+
+        {slide.body && (
+          <p
+            className="text-[36px] leading-[1.35] max-w-[760px]"
+            style={{ fontFamily: 'var(--brand-font-body)', color: 'var(--brand-text)' }}
+          >
+            {slide.body}
+          </p>
+        )}
+
+        {isCta && publicUrl && (
+          <>
+            <Divider />
+            <p
+              className="text-[28px]"
+              style={{ color: 'var(--brand-secondary)', fontFamily: 'var(--brand-font-body)' }}
+            >
+              Try it at
+            </p>
+            <p
+              className="mt-[8px] text-[56px] font-bold"
+              style={{
+                color: 'var(--brand-accent)',
+                fontFamily: 'var(--brand-font-heading)',
+              }}
+            >
+              {stripScheme(publicUrl)}
+            </p>
+          </>
+        )}
+      </div>
+
+      <PageIndicator slideIndex={slide.slideIndex} totalSlides={totalSlides} />
+    </div>
+  );
+}
+
+// ───────── Content layout (carousel middle slides) ─────────
+
+function ContentLayout({
+  slide,
+  totalSlides,
+  kit,
+  projectName,
+}: {
+  slide: DraftSlide;
+  totalSlides: number;
+  kit: BrandKit | null;
+  projectName: string;
 }) {
   return (
-    <div
-      className="w-full h-full relative"
-      style={{
-        ...styleVars,
-        backgroundColor: 'var(--brand-background)',
-        color: 'var(--brand-text)',
-        fontFamily: 'var(--brand-font-body)',
-      }}
-    >
+    <>
       {/* Decorative accent bar on the left */}
       <div
         className="absolute left-0 top-[8%] bottom-[8%] w-[18px]"
         style={{ backgroundColor: 'var(--brand-accent)' }}
       />
 
-      {/* Logo top-right if available */}
+      {/* Logo top-right (small) for content slides */}
       {kit?.logoUrl && (
         <img
           src={kit.logoUrl}
           alt=""
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
-          className="absolute top-[64px] right-[64px] h-[120px] object-contain"
+          className="absolute top-[64px] right-[64px] h-[96px] object-contain"
           onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
         />
       )}
 
-      <div className="absolute inset-0 flex flex-col p-[88px] pl-[120px]">
-        <SlideBody slide={slide} />
-        <Footer slideIndex={slide.slideIndex} totalSlides={totalSlides} />
+      <div className="absolute inset-0 flex flex-col p-[88px] pl-[140px]">
+        <ContentBody slide={slide} />
+        <Footer projectName={projectName} slideIndex={slide.slideIndex} totalSlides={totalSlides} />
       </div>
-    </div>
+    </>
   );
 }
 
-function SlideBody({ slide }: { slide: DraftSlide }) {
+function ContentBody({ slide }: { slide: DraftSlide }) {
   switch (slide.kind) {
-    case 'cover':
-      return (
-        <div className="flex-1 flex flex-col justify-center max-w-[820px]">
-          <p
-            className="text-[24px] uppercase tracking-[0.3em] mb-[24px] font-medium"
-            style={{ color: 'var(--brand-accent)' }}
-          >
-            Carousel
-          </p>
-          <h2
-            className="text-[88px] font-bold leading-[1.05]"
-            style={{
-              fontFamily: 'var(--brand-font-heading)',
-              color: 'var(--brand-primary)',
-            }}
-          >
-            {slide.title ?? slide.body.split('\n')[0]}
-          </h2>
-          {slide.title && slide.body && (
-            <p className="mt-[40px] text-[28px] leading-[1.4] max-w-[760px]">{slide.body}</p>
-          )}
-        </div>
-      );
-
     case 'quote':
       return (
         <div className="flex-1 flex flex-col justify-center max-w-[800px]">
           <span
-            className="text-[180px] leading-none mb-[-40px]"
+            className="text-[200px] leading-none mb-[-50px]"
             style={{ color: 'var(--brand-accent)', fontFamily: 'var(--brand-font-heading)' }}
           >
             “
           </span>
           <p
-            className="text-[44px] font-semibold leading-[1.2]"
+            className="text-[48px] font-semibold leading-[1.2]"
             style={{ fontFamily: 'var(--brand-font-heading)' }}
           >
             {slide.body}
           </p>
           {slide.title && (
             <p
-              className="mt-[36px] text-[22px] uppercase tracking-[0.15em]"
+              className="mt-[36px] text-[24px] uppercase tracking-[0.15em]"
               style={{ color: 'var(--brand-secondary)' }}
             >
               — {slide.title}
@@ -176,7 +249,7 @@ function SlideBody({ slide }: { slide: DraftSlide }) {
       return (
         <div className="flex-1 flex flex-col justify-center max-w-[820px]">
           <p
-            className="text-[220px] font-extrabold leading-none"
+            className="text-[240px] font-extrabold leading-none"
             style={{
               fontFamily: 'var(--brand-font-heading)',
               color: 'var(--brand-primary)',
@@ -186,13 +259,13 @@ function SlideBody({ slide }: { slide: DraftSlide }) {
           </p>
           {slide.title && (
             <p
-              className="mt-[28px] text-[32px] font-semibold"
+              className="mt-[28px] text-[36px] font-semibold"
               style={{ fontFamily: 'var(--brand-font-heading)' }}
             >
               {slide.title}
             </p>
           )}
-          <p className="mt-[16px] text-[24px] leading-[1.4]">{stripStat(slide.body)}</p>
+          <p className="mt-[16px] text-[28px] leading-[1.4]">{stripStat(slide.body)}</p>
         </div>
       );
 
@@ -206,7 +279,7 @@ function SlideBody({ slide }: { slide: DraftSlide }) {
         <div className="flex-1 flex flex-col max-w-[860px]">
           {slide.title && (
             <h3
-              className="text-[52px] font-bold mb-[40px] leading-[1.1]"
+              className="text-[56px] font-bold mb-[44px] leading-[1.1]"
               style={{
                 fontFamily: 'var(--brand-font-heading)',
                 color: 'var(--brand-primary)',
@@ -215,12 +288,15 @@ function SlideBody({ slide }: { slide: DraftSlide }) {
               {slide.title}
             </h3>
           )}
-          <ul className="space-y-[20px] text-[28px] leading-[1.35]">
+          <ul className="space-y-[24px] text-[32px] leading-[1.35]">
             {items.map((it, i) => (
-              <li key={i} className="flex gap-[20px]">
+              <li key={i} className="flex gap-[24px]">
                 <span
                   className="font-bold shrink-0"
-                  style={{ color: 'var(--brand-accent)' }}
+                  style={{
+                    color: 'var(--brand-accent)',
+                    fontFamily: 'var(--brand-font-heading)',
+                  }}
                 >
                   {String(i + 1).padStart(2, '0')}
                 </span>
@@ -231,24 +307,6 @@ function SlideBody({ slide }: { slide: DraftSlide }) {
         </div>
       );
     }
-
-    case 'cta':
-      return (
-        <div className="flex-1 flex flex-col justify-center max-w-[820px]">
-          {slide.title && (
-            <h3
-              className="text-[72px] font-bold leading-[1.05] mb-[32px]"
-              style={{
-                fontFamily: 'var(--brand-font-heading)',
-                color: 'var(--brand-primary)',
-              }}
-            >
-              {slide.title}
-            </h3>
-          )}
-          <p className="text-[32px] leading-[1.4]">{slide.body}</p>
-        </div>
-      );
 
     case 'body':
     default:
@@ -271,13 +329,107 @@ function SlideBody({ slide }: { slide: DraftSlide }) {
   }
 }
 
-function Footer({ slideIndex, totalSlides }: { slideIndex: number; totalSlides: number }) {
+// ───────── Building blocks ─────────
+
+function BrandLockup({ logoUrl, projectName }: { logoUrl: string | null; projectName: string }) {
+  return (
+    <div className="flex flex-col items-center">
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt={projectName}
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+          className="h-[120px] max-w-[280px] object-contain"
+          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+        />
+      ) : null}
+      <p
+        className="mt-[16px] text-[24px] tracking-[0.2em] uppercase font-semibold"
+        style={{
+          color: 'var(--brand-primary)',
+          fontFamily: 'var(--brand-font-heading)',
+        }}
+      >
+        {projectName}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Renders a title, putting any text wrapped in `**asterisks**` (markdown-bold
+ * style) in the accent colour. The Writer can produce these tokens; if it
+ * doesn't, the whole title renders in primary. Gives us the "split colour"
+ * headline effect ("What's your **ATS score?**") without a schema change.
+ */
+function HeadlineWithAccent({
+  text,
+  className,
+  style,
+}: {
+  text: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <h2 className={className} style={style}>
+      {parts.map((part, i) => {
+        const isAccent = part.startsWith('**') && part.endsWith('**');
+        if (isAccent) {
+          return (
+            <span key={i} style={{ color: 'var(--brand-accent)' }}>
+              {part.slice(2, -2)}
+            </span>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </h2>
+  );
+}
+
+function Divider() {
   return (
     <div
-      className="flex items-center justify-between text-[20px] uppercase tracking-[0.2em] opacity-60"
+      className="my-[40px] mx-auto"
+      style={{
+        width: 96,
+        height: 3,
+        backgroundColor: 'var(--brand-accent)',
+      }}
+    />
+  );
+}
+
+function PageIndicator({ slideIndex, totalSlides }: { slideIndex: number; totalSlides: number }) {
+  if (totalSlides <= 1) return null;
+  return (
+    <p
+      className="text-[22px] tracking-[0.2em] self-end"
+      style={{ color: 'var(--brand-secondary)', fontFamily: 'var(--brand-font-body)' }}
+    >
+      {slideIndex + 1} / {totalSlides}
+    </p>
+  );
+}
+
+function Footer({
+  projectName,
+  slideIndex,
+  totalSlides,
+}: {
+  projectName: string;
+  slideIndex: number;
+  totalSlides: number;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between text-[22px] uppercase tracking-[0.2em] opacity-70"
       style={{ color: 'var(--brand-secondary)' }}
     >
-      <span>Bubbles</span>
+      <span>{projectName}</span>
       {totalSlides > 1 && (
         <span>
           {slideIndex + 1} / {totalSlides}
@@ -287,6 +439,8 @@ function Footer({ slideIndex, totalSlides }: { slideIndex: number; totalSlides: 
   );
 }
 
+// ───────── Helpers ─────────
+
 function extractStat(body: string): string {
   const m = body.match(/\d[\d.,]*\s*(?:%|x|k|m|million|billion)?/i);
   return m ? m[0] : body.split(/\s+/)[0] ?? '';
@@ -294,6 +448,10 @@ function extractStat(body: string): string {
 
 function stripStat(body: string): string {
   return body.replace(/^[\d.,%xkm\s]+/i, '').trim();
+}
+
+function stripScheme(url: string): string {
+  return url.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
 
 const defaultPalette = {

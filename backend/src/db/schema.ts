@@ -81,6 +81,7 @@ export const projects = pgTable(
     // this project publishes to. Setup wizard agents consume these in Phase 4.
     brief: text('brief'),
     logoUrl: text('logo_url'),
+    publicUrl: text('public_url'),
     channels: text('channels').array().notNull().default(sql`ARRAY['linkedin','instagram']`),
 
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
