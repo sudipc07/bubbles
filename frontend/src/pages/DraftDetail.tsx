@@ -86,7 +86,13 @@ export function DraftDetailPage() {
                   Phase 5 lands.
                 </p>
               </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div
+                className={`grid gap-4 ${
+                  query.data.draft.format === 'single_image'
+                    ? 'max-w-[520px] mx-auto'
+                    : 'sm:grid-cols-2'
+                }`}
+              >
                 {query.data.slides.map((s) => (
                   <div key={s.id}>
                     <SlidePreview

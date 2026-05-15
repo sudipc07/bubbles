@@ -40,8 +40,19 @@ export async function write(
 
   const formatRules =
     input.plan.format === 'carousel'
-      ? 'A 5-8 slide carousel. First slide kind="cover" with a strong title and short hook. Middle slides kind="bullet-list" or "body" or "stat" or "quote". Last slide kind="cta" but NEVER promote the product — drive curiosity or action only.'
-      : 'A single image. ONE slide of kind="body" with a short title and 2-4 sentences of body copy.';
+      ? [
+          'A 5-8 slide carousel.',
+          'Slide 1 must be kind="cover": title under 60 chars, body 1 short hook sentence.',
+          'Middle slides: kind ∈ {"bullet-list", "body", "stat", "quote"}. Each slide title under 60 chars; body under 240 chars (fits a 1080×1350 social card).',
+          'For bullet-list slides put 3-5 short items separated by newlines in body.',
+          'Last slide kind="cta" — drive curiosity or reflection, NEVER promote the product directly.',
+        ].join(' ')
+      : [
+          'A single image (1080×1080).',
+          'ONE slide of kind="body".',
+          'Title: under 50 characters. Body: 1-2 short punchy sentences, HARD MAXIMUM 180 characters.',
+          'If you cannot make the point in 180 characters, choose a smaller point. Brevity is the entire job here.',
+        ].join(' ');
 
   const schema = input.plan.format === 'carousel' ? CarouselDraftSchema : SingleDraftSchema;
 
