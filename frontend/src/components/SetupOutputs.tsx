@@ -1,6 +1,11 @@
-import type { SetupOutputs } from '../lib/setup';
+import { useDeleteSetupItem, type SetupKind, type SetupOutputs } from '../lib/setup';
 
-export function SetupOutputsView({ data }: { data: SetupOutputs }) {
+interface ViewProps {
+  data: SetupOutputs;
+  projectId: string;
+}
+
+export function SetupOutputsView({ data, projectId }: ViewProps) {
   const hasAny =
     data.audiences.length > 0 ||
     data.voices.length > 0 ||
@@ -14,13 +19,42 @@ export function SetupOutputsView({ data }: { data: SetupOutputs }) {
   return (
     <div className="space-y-8">
       {data.brandKit && <BrandKitCard kit={data.brandKit} />}
-      {data.audiences.length > 0 && <AudiencesSection audiences={data.audiences} />}
-      {data.voices.length > 0 && <VoicesSection voices={data.voices} />}
+      {data.audiences.length > 0 && <AudiencesSection audiences={data.audiences} projectId={projectId} />}
+      {data.voices.length > 0 && <VoicesSection voices={data.voices} projectId={projectId} />}
       {data.personas.length > 0 && (
-        <PersonasSection personas={data.personas} samples={data.samples} />
+        <PersonasSection personas={data.personas} samples={data.samples} projectId={projectId} />
       )}
-      {data.themes.length > 0 && <ThemesSection themes={data.themes} />}
+      {data.themes.length > 0 && <ThemesSection themes={data.themes} projectId={projectId} />}
     </div>
+  );
+}
+
+function DeleteButton({
+  projectId,
+  kind,
+  id,
+  label,
+}: {
+  projectId: string;
+  kind: SetupKind;
+  id: string;
+  label: string;
+}) {
+  const del = useDeleteSetupItem(projectId);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (window.confirm(`Delete "${label}"? This cannot be undone.`)) {
+          del.mutate({ kind, id });
+        }
+      }}
+      disabled={del.isPending}
+      title={`Delete ${label}`}
+      className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+    >
+      ×
+    </button>
   );
 }
 
@@ -68,13 +102,20 @@ function BrandKitCard({ kit }: { kit: NonNullable<SetupOutputs['brandKit']> }) {
   );
 }
 
-function AudiencesSection({ audiences }: { audiences: SetupOutputs['audiences'] }) {
+function AudiencesSection({
+  audiences,
+  projectId,
+}: {
+  audiences: SetupOutputs['audiences'];
+  projectId: string;
+}) {
   return (
     <section>
       <SectionTitle title="Audiences" count={audiences.length} />
       <div className="grid md:grid-cols-2 gap-3">
         {audiences.map((a) => (
-          <div key={a.id} className="rounded-lg border border-neutral-200 p-4">
+          <div key={a.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+            <DeleteButton projectId={projectId} kind="audiences" id={a.id} label={a.name} />
             <p className="font-medium">{a.name}</p>
             <p className="mt-1 text-sm text-neutral-600">{a.summary}</p>
             {a.traits.length > 0 && (
@@ -93,13 +134,20 @@ function AudiencesSection({ audiences }: { audiences: SetupOutputs['audiences'] 
   );
 }
 
-function VoicesSection({ voices }: { voices: SetupOutputs['voices'] }) {
+function VoicesSection({
+  voices,
+  projectId,
+}: {
+  voices: SetupOutputs['voices'];
+  projectId: string;
+}) {
   return (
     <section>
       <SectionTitle title="Voice directions" count={voices.length} />
       <div className="grid md:grid-cols-2 gap-3">
         {voices.map((v) => (
-          <div key={v.id} className="rounded-lg border border-neutral-200 p-4">
+          <div key={v.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+            <DeleteButton projectId={projectId} kind="voices" id={v.id} label={v.name} />
             <p className="font-medium">{v.name}</p>
             <p className="mt-1 text-sm text-neutral-600">{v.description}</p>
             {v.examples.length > 0 && (
@@ -119,9 +167,11 @@ function VoicesSection({ voices }: { voices: SetupOutputs['voices'] }) {
 function PersonasSection({
   personas,
   samples,
+  projectId,
 }: {
   personas: SetupOutputs['personas'];
   samples: SetupOutputs['samples'];
+  projectId: string;
 }) {
   return (
     <section>
@@ -130,7 +180,8 @@ function PersonasSection({
         {personas.map((p) => {
           const personaSamples = samples.filter((s) => s.personaId === p.id);
           return (
-            <div key={p.id} className="rounded-lg border border-neutral-200 p-4">
+            <div key={p.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+              <DeleteButton projectId={projectId} kind="personas" id={p.id} label={p.name} />
               <div className="flex items-baseline justify-between mb-1">
                 <p className="font-medium">{p.name}</p>
                 <p className="text-xs text-neutral-500 font-mono">
@@ -161,13 +212,20 @@ function PersonasSection({
   );
 }
 
-function ThemesSection({ themes }: { themes: SetupOutputs['themes'] }) {
+function ThemesSection({
+  themes,
+  projectId,
+}: {
+  themes: SetupOutputs['themes'];
+  projectId: string;
+}) {
   return (
     <section>
       <SectionTitle title="Themes" count={themes.length} />
       <div className="grid md:grid-cols-2 gap-3">
         {themes.map((t) => (
-          <div key={t.id} className="rounded-lg border border-neutral-200 p-4">
+          <div key={t.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+            <DeleteButton projectId={projectId} kind="themes" id={t.id} label={t.label} />
             <p className="font-medium">{t.label}</p>
             <p className="mt-1 text-sm text-neutral-600">{t.description}</p>
             {t.exampleAngles.length > 0 && (

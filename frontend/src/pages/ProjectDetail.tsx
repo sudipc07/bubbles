@@ -118,7 +118,7 @@ function SetupSection({ project }: { project: Project }) {
 
       {setup.isLoading && <p className="text-xs text-neutral-500">Loading outputs…</p>}
 
-      {setup.data && hasOutputs && <SetupOutputsView data={setup.data} />}
+      {setup.data && hasOutputs && <SetupOutputsView data={setup.data} projectId={project.id} />}
       {setup.data && !hasOutputs && (
         <p className="text-xs text-neutral-400 italic">
           No setup outputs yet. Click "Run setup" once your brief is in.

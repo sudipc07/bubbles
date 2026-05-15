@@ -69,6 +69,19 @@ export function useSetupOutputs(projectId: string | undefined) {
   });
 }
 
+export type SetupKind = 'audiences' | 'voices' | 'personas' | 'themes';
+
+export function useDeleteSetupItem(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ kind, id }: { kind: SetupKind; id: string }) =>
+      api(`/api/projects/${projectId}/setup/${kind}/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] });
+    },
+  });
+}
+
 export function useRunSetup(projectId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
