@@ -11,12 +11,23 @@ export function PipelinePage() {
   const [pipelineId, setPipelineId] = useState<'setup' | 'runtime'>('runtime');
   const graph = useGraph(pipelineId);
   const runs = useRuns(projectId);
-  const { nodeStatus, lastEvent } = useLivePipeline(projectId);
+  const { nodeStatus, lastEvent, events } = useLivePipeline(projectId);
   const trigger = useTriggerRun(projectId);
   const triggerError = trigger.error instanceof ApiError ? trigger.error.message : null;
   const setup = useSetupOutputs(projectId);
   const setupReady =
     !!setup.data && setup.data.personas.length > 0 && setup.data.themes.length > 0;
+
+  // Most-recent run first. Only events seen in this browser session — older
+  // events live in agent_events; clicking a row in the runs history table
+  // will load that run's events from the DB (future enhancement).
+  const eventsByRun = new Map<string, typeof events>();
+  for (const e of events) {
+    const list = eventsByRun.get(e.runId);
+    if (list) list.push(e);
+    else eventsByRun.set(e.runId, [e]);
+  }
+  const runIdsInOrder = Array.from(eventsByRun.keys()).reverse();
 
   if (!projectId) return null;
 
@@ -50,7 +61,7 @@ export function PipelinePage() {
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-4">
         {/* Top stat strip */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <StatCard label="Last event">
+          <StatCard label="Live events">
             {lastEvent ? (
               <div className="flex items-baseline justify-between gap-2">
                 <div>
@@ -58,12 +69,11 @@ export function PipelinePage() {
                   <span className="ml-2 font-mono text-xs text-neutral-500">{lastEvent.eventType}</span>
                 </div>
                 <span className="text-xs text-neutral-500 whitespace-nowrap">
-                  {new Date(lastEvent.at).toLocaleTimeString()}
-                  {lastEvent.durationMs != null && ` · ${lastEvent.durationMs}ms`}
+                  {events.length} total
                 </span>
               </div>
             ) : (
-              <p className="text-xs text-neutral-400">No events yet. SSE connected.</p>
+              <p className="text-xs text-neutral-400">SSE connected. No events yet.</p>
             )}
           </StatCard>
 
@@ -136,6 +146,73 @@ export function PipelinePage() {
             </p>
           )}
         </section>
+
+        {/* Live event timeline (this session) */}
+        {events.length > 0 && (
+          <section>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+              Event timeline · this session
+            </h2>
+            <div className="rounded-lg border border-neutral-200 overflow-hidden divide-y divide-neutral-100 max-h-96 overflow-y-auto">
+              {runIdsInOrder.map((runId) => {
+                const runEvents = eventsByRun.get(runId)!;
+                const startedAt = runEvents[0]?.at;
+                return (
+                  <div key={runId} className="p-3 bg-neutral-50/40">
+                    <div className="flex items-baseline justify-between text-xs mb-2">
+                      <span className="font-mono text-neutral-500">
+                        run {runId.slice(0, 8)}
+                      </span>
+                      <span className="text-neutral-400">
+                        {startedAt ? new Date(startedAt).toLocaleString() : ''}
+                      </span>
+                    </div>
+                    <ol className="space-y-0.5">
+                      {runEvents.map((e, i) => (
+                        <li
+                          key={`${e.nodeId}-${e.eventType}-${i}`}
+                          className="text-xs grid grid-cols-[80px_120px_1fr_auto] gap-2 font-mono"
+                        >
+                          <span className="text-neutral-400">
+                            {new Date(e.at).toLocaleTimeString([], { hour12: false })}
+                          </span>
+                          <span
+                            className={
+                              e.eventType === 'finished'
+                                ? 'text-emerald-700'
+                                : e.eventType === 'failed'
+                                  ? 'text-red-700'
+                                  : e.eventType === 'started'
+                                    ? 'text-blue-700'
+                                    : 'text-neutral-500'
+                            }
+                          >
+                            {e.eventType}
+                          </span>
+                          <span className="font-sans font-medium text-neutral-800">
+                            {e.agentName}
+                          </span>
+                          <span className="text-neutral-500">
+                            {e.durationMs != null ? `${e.durationMs}ms` : ''}
+                          </span>
+                          {e.errorMessage && (
+                            <span className="col-span-4 text-red-600 font-sans pl-[210px] break-all">
+                              ↳ {e.errorMessage}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-neutral-400 mt-1">
+              Live events received in this browser session. Refreshing clears the list (DB has the
+              full history; clicking a run below will show its events in a future update).
+            </p>
+          </section>
+        )}
 
         {/* Runs list */}
         {runs.data && runs.data.runs.length > 0 && (

@@ -75,9 +75,12 @@ export function useTriggerRun(projectId: string | undefined) {
 
 export type NodeStatus = 'idle' | 'running' | 'done' | 'failed';
 
+const MAX_EVENTS_BUFFER = 200;
+
 export function useLivePipeline(projectId: string | undefined) {
   const [nodeStatus, setNodeStatus] = useState<Record<string, NodeStatus>>({});
-  const [lastEvent, setLastEvent] = useState<PipelineEvent | null>(null);
+  const [events, setEvents] = useState<PipelineEvent[]>([]);
+  const currentRunIdRef = useRef<string | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -87,18 +90,31 @@ export function useLivePipeline(projectId: string | undefined) {
     es.addEventListener('pipeline', (msg) => {
       try {
         const evt = JSON.parse((msg as MessageEvent).data) as PipelineEvent;
-        setLastEvent(evt);
-        setNodeStatus((prev) => ({
-          ...prev,
-          [evt.nodeId]:
-            evt.eventType === 'started'
-              ? 'running'
-              : evt.eventType === 'finished'
-                ? 'done'
-                : evt.eventType === 'failed'
-                  ? 'failed'
-                  : 'idle',
-        }));
+
+        // Detect a new run starting (first 'started' event of a new runId)
+        // and reset graph node colours so we don't carry stale 'done' states
+        // from the previous run.
+        if (evt.runId !== currentRunIdRef.current && evt.eventType === 'started') {
+          currentRunIdRef.current = evt.runId;
+          setNodeStatus({ [evt.nodeId]: 'running' });
+        } else {
+          setNodeStatus((prev) => ({
+            ...prev,
+            [evt.nodeId]:
+              evt.eventType === 'started'
+                ? 'running'
+                : evt.eventType === 'finished'
+                  ? 'done'
+                  : evt.eventType === 'failed'
+                    ? 'failed'
+                    : 'idle',
+          }));
+        }
+
+        setEvents((prev) => {
+          const next = [...prev, evt];
+          return next.length > MAX_EVENTS_BUFFER ? next.slice(-MAX_EVENTS_BUFFER) : next;
+        });
       } catch (err) {
         console.error('SSE parse error', err);
       }
@@ -112,5 +128,7 @@ export function useLivePipeline(projectId: string | undefined) {
     };
   }, [projectId]);
 
-  return { nodeStatus, lastEvent };
+  const lastEvent = events.length > 0 ? events[events.length - 1]! : null;
+
+  return { nodeStatus, lastEvent, events };
 }
