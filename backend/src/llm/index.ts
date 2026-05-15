@@ -11,13 +11,61 @@ import {
   DEFAULT_EMBED_MODEL,
 } from './pricing.js';
 
-let client: OpenAI | null = null;
-function getClient(): OpenAI {
-  if (!env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY is not set on the server');
+let primary: OpenAI | null = null;
+let fallback: OpenAI | null = null;
+let primaryDeadUntil = 0; // epoch ms; sticky failover so we don't pay the 401 round-trip every call
+
+function getPrimary(): OpenAI | null {
+  if (!env.OPENAI_API_KEY) return null;
+  primary ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });
+  return primary;
+}
+
+function getFallback(): OpenAI | null {
+  if (!env.OPENAI_API_FB_KEY) return null;
+  fallback ??= new OpenAI({ apiKey: env.OPENAI_API_FB_KEY });
+  return fallback;
+}
+
+function isAuthError(err: unknown): boolean {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as { status?: number; code?: string };
+  return e.status === 401 || e.code === 'invalid_api_key';
+}
+
+/**
+ * Run an OpenAI call against the primary key; on 401, transparently retry once
+ * against the fallback key and remember the primary is dead for 10 minutes
+ * (so subsequent calls in the same pipeline don't all eat the 401 round-trip).
+ */
+async function withFailover<T>(fn: (client: OpenAI) => Promise<T>): Promise<T> {
+  const useFallbackFirst = env.OPENAI_API_FB_KEY && Date.now() < primaryDeadUntil;
+
+  if (useFallbackFirst) {
+    const fb = getFallback();
+    if (fb) return fn(fb);
   }
-  client ??= new OpenAI({ apiKey: env.OPENAI_API_KEY });
-  return client;
+
+  const p = getPrimary();
+  const fb = getFallback();
+  if (!p && !fb) {
+    throw new Error('Neither OPENAI_API_KEY nor OPENAI_API_FB_KEY is set on the server');
+  }
+
+  if (p) {
+    try {
+      return await fn(p);
+    } catch (err) {
+      if (!isAuthError(err) || !fb) throw err;
+      // Primary auth failed — flag dead for 10 min and retry on fallback.
+      primaryDeadUntil = Date.now() + 10 * 60 * 1000;
+      console.warn('[llm] primary OPENAI_API_KEY rejected; using OPENAI_API_FB_KEY');
+      return fn(fb);
+    }
+  }
+
+  // Primary missing but fallback present — just use it.
+  return fn(fb!);
 }
 
 export class CostCeilingExceeded extends Error {
@@ -77,13 +125,15 @@ export async function complete(ctx: CallContext, input: CompleteInput): Promise<
   messages.push({ role: 'user', content: input.user });
 
   const started = Date.now();
-  const response = await getClient().chat.completions.create({
-    model,
-    messages,
-    temperature: input.temperature ?? 0.7,
-    max_tokens: input.maxTokens ?? 2000,
-    ...(input.jsonMode ? { response_format: { type: 'json_object' as const } } : {}),
-  });
+  const response = await withFailover((c) =>
+    c.chat.completions.create({
+      model,
+      messages,
+      temperature: input.temperature ?? 0.7,
+      max_tokens: input.maxTokens ?? 2000,
+      ...(input.jsonMode ? { response_format: { type: 'json_object' as const } } : {}),
+    }),
+  );
   const latencyMs = Date.now() - started;
 
   const text = response.choices[0]?.message?.content ?? '';
@@ -116,7 +166,7 @@ export async function embed(ctx: CallContext, text: string, model: string = DEFA
   await assertWithinCeiling(ctx.projectId);
 
   const started = Date.now();
-  const response = await getClient().embeddings.create({ model, input: text });
+  const response = await withFailover((c) => c.embeddings.create({ model, input: text }));
   const latencyMs = Date.now() - started;
 
   const vector = response.data[0]?.embedding ?? [];

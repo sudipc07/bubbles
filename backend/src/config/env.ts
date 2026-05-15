@@ -16,6 +16,8 @@ const schema = z.object({
   S3_REGION: z.string().default('ap-south-1'),
 
   OPENAI_API_KEY: z.string().optional(),
+  // Optional fallback used automatically when OPENAI_API_KEY returns 401.
+  OPENAI_API_FB_KEY: z.string().optional(),
 
   DEFAULT_MONTHLY_COST_CEILING_USD: z.coerce.number().default(20),
 
