@@ -1,4 +1,10 @@
-import { useDeleteSetupItem, type SetupKind, type SetupOutputs } from '../lib/setup';
+import { useEffect, useState } from 'react';
+import {
+  useDeleteSetupItem,
+  useUpdateBrandKit,
+  type SetupKind,
+  type SetupOutputs,
+} from '../lib/setup';
 
 interface ViewProps {
   data: SetupOutputs;
@@ -18,7 +24,7 @@ export function SetupOutputsView({ data, projectId }: ViewProps) {
 
   return (
     <div className="space-y-8">
-      {data.brandKit && <BrandKitCard kit={data.brandKit} />}
+      {data.brandKit && <BrandKitCard kit={data.brandKit} projectId={projectId} />}
       {data.audiences.length > 0 && <AudiencesSection audiences={data.audiences} projectId={projectId} />}
       {data.voices.length > 0 && <VoicesSection voices={data.voices} projectId={projectId} />}
       {data.personas.length > 0 && (
@@ -67,38 +73,136 @@ function SectionTitle({ title, count }: { title: string; count: number }) {
   );
 }
 
-function BrandKitCard({ kit }: { kit: NonNullable<SetupOutputs['brandKit']> }) {
-  const entries = Object.entries(kit.palette) as [string, string][];
+const SAFE_FONTS = [
+  'Inter',
+  'Source Sans 3',
+  'Manrope',
+  'Plus Jakarta Sans',
+  'IBM Plex Sans',
+  'Lora',
+  'Source Serif 4',
+  'Playfair Display',
+  'Merriweather',
+  'Space Grotesk',
+  'JetBrains Mono',
+] as const;
+
+type PaletteKey = 'primary' | 'secondary' | 'accent' | 'background' | 'text';
+const PALETTE_ORDER: PaletteKey[] = ['primary', 'secondary', 'accent', 'background', 'text'];
+
+function BrandKitCard({
+  kit,
+  projectId,
+}: {
+  kit: NonNullable<SetupOutputs['brandKit']>;
+  projectId: string;
+}) {
+  const update = useUpdateBrandKit(projectId);
+  const [palette, setPalette] = useState(kit.palette);
+  const [fonts, setFonts] = useState(kit.fonts);
+  const [saved, setSaved] = useState(false);
+
+  // Keep local state in sync if the upstream kit changes (e.g. setup re-run).
+  useEffect(() => {
+    setPalette(kit.palette);
+    setFonts(kit.fonts);
+  }, [kit.palette, kit.fonts]);
+
+  const dirty =
+    PALETTE_ORDER.some((k) => palette[k].toLowerCase() !== kit.palette[k].toLowerCase()) ||
+    fonts.heading !== kit.fonts.heading ||
+    fonts.body !== kit.fonts.body;
+
+  async function onSave() {
+    setSaved(false);
+    await update.mutateAsync({ palette, fonts });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
   return (
     <section>
       <SectionTitle title="Brand kit" count={5} />
       <div className="rounded-lg border border-neutral-200 p-4">
         <div className="grid grid-cols-5 gap-2 mb-4">
-          {entries.map(([label, color]) => (
-            <div key={label} className="text-center">
-              <div
-                className="h-16 w-full rounded-md border border-neutral-200"
-                style={{ backgroundColor: color }}
+          {PALETTE_ORDER.map((key) => (
+            <div key={key} className="text-center">
+              <label className="block cursor-pointer" title="Click to change">
+                <div
+                  className="h-16 w-full rounded-md border border-neutral-200 transition-transform hover:scale-[1.02]"
+                  style={{ backgroundColor: palette[key] }}
+                />
+                <input
+                  type="color"
+                  value={palette[key]}
+                  onChange={(e) =>
+                    setPalette({ ...palette, [key]: e.target.value.toLowerCase() })
+                  }
+                  className="sr-only"
+                />
+              </label>
+              <p className="mt-1.5 text-[10px] uppercase tracking-wide text-neutral-500">{key}</p>
+              <input
+                type="text"
+                value={palette[key]}
+                onChange={(e) => {
+                  const v = e.target.value.toLowerCase();
+                  setPalette({ ...palette, [key]: v });
+                }}
+                spellCheck={false}
+                className="mt-0.5 w-full bg-transparent text-center text-xs font-mono focus:outline-none focus:bg-neutral-50 rounded px-1"
               />
-              <p className="mt-1.5 text-[10px] uppercase tracking-wide text-neutral-500">{label}</p>
-              <p className="text-xs font-mono">{color}</p>
             </div>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Heading</p>
-            <p style={{ fontFamily: kit.fonts.heading }} className="text-lg">
-              {kit.fonts.heading}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Body</p>
-            <p style={{ fontFamily: kit.fonts.body }}>{kit.fonts.body}</p>
-          </div>
+          <FontPicker
+            label="Heading"
+            value={fonts.heading}
+            onChange={(v) => setFonts({ ...fonts, heading: v })}
+          />
+          <FontPicker
+            label="Body"
+            value={fonts.body}
+            onChange={(v) => setFonts({ ...fonts, body: v })}
+          />
+        </div>
+        <div className="mt-4 flex items-center gap-3 border-t border-neutral-100 pt-3">
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!dirty || update.isPending}
+            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800 disabled:opacity-50"
+          >
+            {update.isPending ? 'Saving…' : 'Save brand kit'}
+          </button>
+          {saved && <span className="text-xs text-emerald-700">Saved.</span>}
+          {!dirty && !saved && <span className="text-xs text-neutral-400">Click a swatch to edit.</span>}
         </div>
       </div>
     </section>
+  );
+}
+
+function FontPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const isCustom = !SAFE_FONTS.includes(value as (typeof SAFE_FONTS)[number]);
+  return (
+    <div>
+      <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">{label}</p>
+      <select
+        value={isCustom ? '__custom' : value}
+        onChange={(e) => onChange(e.target.value === '__custom' ? value : e.target.value)}
+        className="text-lg bg-transparent border-b border-transparent hover:border-neutral-300 focus:border-neutral-900 focus:outline-none cursor-pointer"
+        style={{ fontFamily: value }}
+      >
+        {SAFE_FONTS.map((f) => (
+          <option key={f} value={f} style={{ fontFamily: f }}>
+            {f}
+          </option>
+        ))}
+        {isCustom && <option value="__custom">{value} (custom)</option>}
+      </select>
+    </div>
   );
 }
 

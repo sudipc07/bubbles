@@ -6,7 +6,7 @@ import { useUpdateBrief, type Project } from '../lib/projects';
 import { useRunSetup, useSetupOutputs } from '../lib/setup';
 import { SetupOutputsView } from '../components/SetupOutputs';
 import { useDrafts } from '../lib/drafts';
-import { useRuns } from '../lib/pipeline';
+import { useLivePipeline, useRuns } from '../lib/pipeline';
 
 const ALL_CHANNELS = ['linkedin', 'instagram'] as const;
 type Channel = (typeof ALL_CHANNELS)[number];
@@ -74,11 +74,27 @@ export function ProjectDetailPage() {
   );
 }
 
-function SetupSection({ project }: { project: Project }) {
-  const setup = useSetupOutputs(project.id);
-  const run = useRunSetup(project.id);
-  const briefReady = !!project.brief && project.brief.trim().length >= 30;
+const SETUP_NODES = ['parser', 'audience', 'voice', 'persona', 'theme', 'brandkit', 'sample'] as const;
+const SETUP_LABELS: Record<string, string> = {
+  parser: 'Parser',
+  audience: 'Audience Generator',
+  voice: 'Voice Generator',
+  persona: 'Persona Generator',
+  theme: 'Theme Generator',
+  brandkit: 'Brand Kit',
+  sample: 'Sample Generator',
+};
 
+function SetupSection({ project }: { project: Project }) {
+  const runs = useRuns(project.id);
+  const latestSetupRun = runs.data?.runs.find((r) => r.pipeline === 'setup');
+  const isRunning = latestSetupRun?.status === 'running';
+
+  const setup = useSetupOutputs(project.id, isRunning);
+  const run = useRunSetup(project.id);
+  const { nodeStatus, lastEvent } = useLivePipeline(project.id);
+
+  const briefReady = !!project.brief && project.brief.trim().length >= 30;
   const errorMessage = run.error instanceof ApiError ? run.error.message : null;
   const hasOutputs =
     !!setup.data &&
@@ -87,6 +103,13 @@ function SetupSection({ project }: { project: Project }) {
       setup.data.samples.length > 0 ||
       !!setup.data.brandKit);
 
+  // Setup is in progress if either: server reports a running setup run, or
+  // we just kicked one off and the runs list hasn't caught up.
+  const showProgress = isRunning || run.isPending;
+
+  const completedSetupNodes = SETUP_NODES.filter((n) => nodeStatus[n] === 'done').length;
+  const currentNode = SETUP_NODES.find((n) => nodeStatus[n] === 'running');
+
   return (
     <section className="space-y-4">
       <div className="flex items-baseline justify-between">
@@ -94,17 +117,16 @@ function SetupSection({ project }: { project: Project }) {
           <h2 className="text-base font-semibold tracking-tight">Setup outputs</h2>
           <p className="text-xs text-neutral-500 mt-0.5">
             Runs all 7 setup agents (Parser → Audience → Voice → Persona → Theme → Brand Kit →
-            Sample). About 5-10 seconds, ~$0.003 in LLM cost. Watch the graph live on the Pipeline
-            tab.
+            Sample). About 20-40 seconds, ~$0.003 in LLM cost.
           </p>
         </div>
         <button
           onClick={() => run.mutate()}
-          disabled={!briefReady || run.isPending}
+          disabled={!briefReady || run.isPending || isRunning}
           className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 whitespace-nowrap"
           title={!briefReady ? 'Save a brief of at least 30 characters first' : undefined}
         >
-          {run.isPending ? 'Starting…' : hasOutputs ? 'Re-run setup' : 'Run setup'}
+          {showProgress ? 'Running…' : hasOutputs ? 'Re-run setup' : 'Run setup'}
         </button>
       </div>
 
@@ -116,10 +138,37 @@ function SetupSection({ project }: { project: Project }) {
         </p>
       )}
 
+      {showProgress && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-blue-900">
+              {currentNode
+                ? `Running ${SETUP_LABELS[currentNode] ?? currentNode}…`
+                : 'Starting setup pipeline…'}
+            </span>
+            <span className="font-mono text-blue-700">
+              {completedSetupNodes} / {SETUP_NODES.length}
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 w-full bg-blue-100 rounded overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all"
+              style={{ width: `${(completedSetupNodes / SETUP_NODES.length) * 100}%` }}
+            />
+          </div>
+          {lastEvent && (
+            <p className="mt-2 text-[10px] text-blue-700 font-mono">
+              latest: {lastEvent.agentName} · {lastEvent.eventType}
+              {lastEvent.durationMs != null && ` · ${lastEvent.durationMs}ms`}
+            </p>
+          )}
+        </div>
+      )}
+
       {setup.isLoading && <p className="text-xs text-neutral-500">Loading outputs…</p>}
 
       {setup.data && hasOutputs && <SetupOutputsView data={setup.data} projectId={project.id} />}
-      {setup.data && !hasOutputs && (
+      {setup.data && !hasOutputs && !showProgress && (
         <p className="text-xs text-neutral-400 italic">
           No setup outputs yet. Click "Run setup" once your brief is in.
         </p>

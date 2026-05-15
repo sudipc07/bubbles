@@ -53,19 +53,14 @@ export interface SetupOutputs {
   samples: Sample[];
 }
 
-export function useSetupOutputs(projectId: string | undefined) {
+export function useSetupOutputs(projectId: string | undefined, isRunning = false) {
   return useQuery({
     enabled: !!projectId,
     queryKey: ['projects', projectId, 'setup'],
     queryFn: () => api<SetupOutputs>(`/api/projects/${projectId}/setup`),
-    refetchInterval: (query) => {
-      // Light polling — events still flow via SSE for the graph; this picks up
-      // newly inserted setup outputs after each agent completes.
-      const data = query.state.data;
-      const hasAny =
-        !!data && (data.audiences.length > 0 || data.personas.length > 0 || data.samples.length > 0);
-      return hasAny ? false : 2500;
-    },
+    // Poll every 2s while a setup run is in progress so each agent's output
+    // surfaces as it lands. Stop polling once nothing is running.
+    refetchInterval: isRunning ? 2000 : false,
   });
 }
 
@@ -93,5 +88,20 @@ export function useRunSetup(projectId: string | undefined) {
       qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] });
       qc.invalidateQueries({ queryKey: ['pipeline', 'runs', projectId] });
     },
+  });
+}
+
+export function useUpdateBrandKit(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: {
+      palette?: BrandKit['palette'];
+      fonts?: BrandKit['fonts'];
+    }) =>
+      api<{ brandKit: BrandKit }>(`/api/projects/${projectId}/brand-kit`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] }),
   });
 }

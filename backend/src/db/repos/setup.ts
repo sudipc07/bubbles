@@ -15,6 +15,30 @@ import {
   type Voice,
 } from '../schema.js';
 
+export interface BrandKitPatch {
+  palette?: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    text: string;
+  };
+  fonts?: { heading: string; body: string };
+}
+
+export async function updateBrandKit(projectId: string, patch: BrandKitPatch): Promise<BrandKit | undefined> {
+  const updates: Partial<typeof brandKits.$inferInsert> = {};
+  if (patch.palette) updates.palette = patch.palette;
+  if (patch.fonts) updates.fonts = patch.fonts;
+  if (Object.keys(updates).length === 0) return undefined;
+  const rows = await db
+    .update(brandKits)
+    .set(updates)
+    .where(eq(brandKits.projectId, projectId))
+    .returning();
+  return rows[0];
+}
+
 export async function deleteAudience(projectId: string, id: string): Promise<boolean> {
   const rows = await db
     .delete(audiences)

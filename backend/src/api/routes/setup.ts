@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { triggerSetupRun } from '../../agents/setup/orchestrator.js';
 import { findProjectByIdForMember } from '../../db/repos/projects.js';
 import {
@@ -7,6 +8,7 @@ import {
   deleteTheme,
   deleteVoice,
   loadSetupOutputs,
+  updateBrandKit,
 } from '../../db/repos/setup.js';
 import { checkLimit } from '../../lib/rateLimit.js';
 import { CostCeilingExceeded } from '../../llm/index.js';
@@ -25,6 +27,49 @@ setup.get('/:projectId/setup', async (req, res) => {
   }
   const outputs = await loadSetupOutputs(project.id);
   res.json(outputs);
+});
+
+// PATCH /api/projects/:projectId/brand-kit — owner-only edit of palette + fonts.
+const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+const brandKitSchema = z.object({
+  palette: z
+    .object({
+      primary: hex,
+      secondary: hex,
+      accent: hex,
+      background: hex,
+      text: hex,
+    })
+    .optional(),
+  fonts: z
+    .object({
+      heading: z.string().min(1).max(60),
+      body: z.string().min(1).max(60),
+    })
+    .optional(),
+});
+
+setup.patch('/:projectId/brand-kit', async (req, res) => {
+  const project = await findProjectByIdForMember(req.params.projectId, req.user!.id);
+  if (!project) {
+    res.status(404).json({ error: 'not_found' });
+    return;
+  }
+  if (project.role !== 'owner') {
+    res.status(403).json({ error: 'owner_only' });
+    return;
+  }
+  const parsed = brandKitSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_input', details: parsed.error.flatten() });
+    return;
+  }
+  const kit = await updateBrandKit(project.id, parsed.data);
+  if (!kit) {
+    res.status(404).json({ error: 'no_brand_kit_yet' });
+    return;
+  }
+  res.json({ brandKit: kit });
 });
 
 // DELETE /api/projects/:projectId/setup/{audiences|voices|personas|themes}/:id
