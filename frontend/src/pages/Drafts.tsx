@@ -40,10 +40,18 @@ export function DraftsPage() {
       <main className="max-w-6xl mx-auto px-6 py-6">
         {drafts.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
         {drafts.data && drafts.data.length === 0 && (
-          <div className="rounded-lg border border-dashed border-neutral-300 p-10 text-center">
-            <p className="text-sm text-neutral-500">
-              No drafts yet. Trigger a runtime pipeline from the Pipeline tab.
+          <div className="rounded-lg border border-dashed border-neutral-300 p-10 text-center space-y-3">
+            <p className="text-sm text-neutral-700 font-medium">No drafts in this queue yet</p>
+            <p className="text-xs text-neutral-500 max-w-md mx-auto">
+              Drafts are produced by the <em>runtime</em> pipeline (Pipeline tab → Generate now).
+              Setup samples are previews and don't appear here.
             </p>
+            <Link
+              href={`/projects/${projectId}/pipeline`}
+              className="inline-block rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
+            >
+              Open Pipeline →
+            </Link>
           </div>
         )}
         {drafts.data && drafts.data.length > 0 && (

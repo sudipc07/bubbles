@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useRoute } from 'wouter';
 import { ApiError } from '../lib/api';
 import { useGraph, useLivePipeline, useRuns, useTriggerRun } from '../lib/pipeline';
+import { useSetupOutputs } from '../lib/setup';
 import { PipelineGraphView } from '../components/PipelineGraph';
 
 export function PipelinePage() {
@@ -13,6 +14,9 @@ export function PipelinePage() {
   const { nodeStatus, lastEvent } = useLivePipeline(projectId);
   const trigger = useTriggerRun(projectId);
   const triggerError = trigger.error instanceof ApiError ? trigger.error.message : null;
+  const setup = useSetupOutputs(projectId);
+  const setupReady =
+    !!setup.data && setup.data.personas.length > 0 && setup.data.themes.length > 0;
 
   if (!projectId) return null;
 
@@ -106,9 +110,13 @@ export function PipelinePage() {
                 )}
                 <button
                   onClick={() => trigger.mutate()}
-                  disabled={trigger.isPending}
+                  disabled={trigger.isPending || !setupReady}
                   className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
-                  title="Real LLM run — produces a Draft, ~$0.005 in tokens"
+                  title={
+                    !setupReady
+                      ? 'Run setup first (need at least one persona and one theme)'
+                      : 'Real LLM run — produces a Draft, ~$0.005 in tokens'
+                  }
                 >
                   {trigger.isPending ? 'Starting…' : 'Generate now'}
                 </button>
@@ -119,9 +127,14 @@ export function PipelinePage() {
           {graph.data && <PipelineGraphView graph={graph.data} nodeStatus={nodeStatus} />}
           <p className="text-xs text-neutral-500 mt-2">
             Nodes pulse when running, turn green on completion, red on failure. A successful runtime
-            run produces a Draft in the Drafts queue. Setup must have been run first (so personas
-            and themes exist).
+            run produces a Draft in the Drafts queue.
           </p>
+          {pipelineId === 'runtime' && !setupReady && (
+            <p className="text-xs text-amber-700 mt-1">
+              Setup isn't ready yet — go back to the project, save a brief, and run setup. Generate
+              now will be enabled once at least one persona and one theme exist.
+            </p>
+          )}
         </section>
 
         {/* Runs list */}
