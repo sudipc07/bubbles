@@ -1,11 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'wouter';
-import { useAuth, useLogout } from '../lib/auth';
 import { useCreateProject, useProjects } from '../lib/projects';
 
 export function ProjectsListPage() {
-  const { user } = useAuth();
-  const logout = useLogout();
   const projects = useProjects();
   const createProject = useCreateProject();
   const [name, setName] = useState('');
@@ -18,98 +15,90 @@ export function ProjectsListPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-neutral-200">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold">Bubbles</h1>
-          <div className="flex items-center gap-4 text-sm">
-            <span className="text-neutral-500">{user?.email}</span>
-            {user?.isAdmin && (
-              <Link href="/admin" className="text-neutral-700 hover:underline">
-                Admin
-              </Link>
-            )}
-            <button
-              onClick={() => logout.mutate()}
-              className="text-neutral-500 hover:text-neutral-900"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-full">
+      {/* Page chrome */}
+      <div className="px-6 py-4 border-b border-border-color bg-background-dark sticky top-0 z-10">
+        <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
+          <span className="text-accent-cyan">[BUBBLES]</span>
+          <span className="mx-2 opacity-50">//</span>
+          <span>PROJECTS</span>
+        </p>
+      </div>
 
-      <main className="max-w-4xl mx-auto px-6 py-10">
-        <div className="flex items-baseline justify-between mb-6">
-          <h2 className="text-2xl font-semibold tracking-tight">Projects</h2>
-          <p className="text-sm text-neutral-500">
-            {projects.data?.length ?? 0} brand{projects.data?.length === 1 ? '' : 's'}
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <header className="flex items-baseline justify-between mb-2">
+          <h1 className="font-display text-3xl font-bold tracking-tight">Active Pipelines</h1>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+            GLOBAL_STATUS: NOMINAL · PIPELINES: {projects.data?.length ?? 0}
           </p>
+        </header>
+        <hr className="border-border-color mb-6" />
+
+        {projects.isLoading && (
+          <p className="font-mono text-xs uppercase tracking-wider text-muted">[LOADING] // Fetching projects…</p>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {projects.data?.map((p) => (
+            <Link
+              key={p.id}
+              href={`/projects/${p.id}`}
+              className="group relative block rounded-xl border border-border-color bg-surface p-4 hover:border-accent-cyan/50 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="min-w-0">
+                  <h2 className="font-display font-bold text-lg truncate">{p.name}</h2>
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-muted mt-0.5 truncate">
+                    {p.slug}
+                  </p>
+                </div>
+                <StatusPill status={p.status} />
+              </div>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+                MONTHLY_CAP: <span className="text-text-primary">${p.monthlyCostCeilingUsd}</span>
+                <span className="mx-2 opacity-50">·</span>
+                ROLE: <span className="text-text-primary">{p.role}</span>
+              </p>
+            </Link>
+          ))}
+
+          {/* "New pipeline" card */}
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('new-project-input') as HTMLInputElement | null;
+              el?.focus();
+            }}
+            className="rounded-xl border border-dashed border-border-color bg-transparent p-4 flex flex-col items-center justify-center gap-2 min-h-[140px] text-muted hover:border-accent-cyan/60 hover:text-text-primary transition-colors"
+          >
+            <span className="material-symbols-outlined text-3xl">add_circle</span>
+            <span className="font-mono text-xs uppercase tracking-wider">NEW_PIPELINE</span>
+          </button>
         </div>
 
-        <form onSubmit={onCreate} className="flex gap-2 mb-8">
+        <form onSubmit={onCreate} className="mt-8 flex gap-2 max-w-xl">
           <input
+            id="new-project-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="New project name (e.g. ResumeFolio)"
-            className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+            placeholder="Project name (e.g. ResumeFolio)"
+            className="flex-1 bg-surface border border-border-color rounded px-3 py-2 text-sm font-mono text-text-primary placeholder-muted focus:outline-none focus:border-accent-cyan transition-colors"
           />
           <button
             type="submit"
             disabled={createProject.isPending || !name.trim()}
-            className="rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
+            className="btn-bracket bg-primary text-white px-4 py-2 hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
-            {createProject.isPending ? 'Creating…' : 'Create'}
+            {createProject.isPending ? 'CREATING' : 'INITIATE_PROJECT'}
           </button>
         </form>
-
-        {projects.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-
-        {projects.data && projects.data.length === 0 && (
-          <div className="rounded-lg border border-dashed border-neutral-300 p-10 text-center">
-            <p className="text-neutral-500 text-sm">
-              No projects yet. Create your first brand to get started.
-            </p>
-          </div>
-        )}
-
-        {projects.data && projects.data.length > 0 && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 overflow-hidden">
-            {projects.data.map((p) => (
-              <li key={p.id}>
-                <Link
-                  href={`/projects/${p.id}`}
-                  className="block px-4 py-3 hover:bg-neutral-50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{p.name}</p>
-                      <p className="text-xs text-neutral-500 font-mono">{p.slug}</p>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs">
-                      <StatusPill status={p.status} />
-                      <span className="text-neutral-500">{p.role}</span>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
       </main>
     </div>
   );
 }
 
 function StatusPill({ status }: { status: 'active' | 'paused' | 'archived' }) {
-  const cls = {
-    active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    paused: 'bg-amber-50 text-amber-700 border-amber-200',
-    archived: 'bg-neutral-100 text-neutral-600 border-neutral-200',
-  }[status];
-  return (
-    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 font-medium capitalize ${cls}`}>
-      {status}
-    </span>
-  );
+  const variant =
+    status === 'active' ? 'status-pill-emerald' : status === 'paused' ? 'status-pill-amber' : 'status-pill-muted';
+  return <span className={`status-pill ${variant}`}>{status}</span>;
 }

@@ -97,28 +97,28 @@ export function DraftDetailPage() {
     <div className="min-h-screen">
       <ProjectHeader
         projectId={projectId}
-        activeTab="drafts"
+        page="INSPECTOR"
         rightSlot={
           <Link
             href={`/projects/${projectId}/drafts`}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50"
+            className="rounded-md border border-border-color px-3 py-1.5 text-xs font-medium hover:bg-surface-2"
           >
             ← All drafts
           </Link>
         }
       />
       {copyToast && (
-        <div className="max-w-4xl mx-auto px-6 pt-2 text-xs text-emerald-700">{copyToast} copied</div>
+        <div className="max-w-4xl mx-auto px-6 pt-2 text-xs text-accent-emerald">{copyToast} copied</div>
       )}
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-        {query.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-        {query.error && <p className="text-sm text-red-600">Could not load draft.</p>}
+        {query.isLoading && <p className="text-sm text-muted">Loading…</p>}
+        {query.error && <p className="text-sm text-accent-red">Could not load draft.</p>}
         {query.data && (
           <>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">{query.data.draft.topicTitle}</h1>
-              <p className="text-xs text-neutral-500 mt-1">
+              <p className="text-xs text-muted mt-1">
                 {query.data.draft.format.replace('_', ' ')}
                 {query.data.draft.angle && ` · ${query.data.draft.angle}`} ·{' '}
                 {new Date(query.data.draft.createdAt).toLocaleString()}
@@ -133,8 +133,8 @@ export function DraftDetailPage() {
                   <span
                     className={`rounded-full border px-2 py-0.5 ${
                       query.data.draft.safetyVerdict === 'pass'
-                        ? 'border-emerald-200 text-emerald-700'
-                        : 'border-red-200 text-red-700'
+                        ? 'border-accent-emerald/40 text-accent-emerald'
+                        : 'border-accent-red/40 text-accent-red'
                     }`}
                   >
                     safety: {query.data.draft.safetyVerdict}
@@ -143,7 +143,7 @@ export function DraftDetailPage() {
                 <span className="rounded-full border px-2 py-0.5 capitalize">{query.data.draft.status}</span>
               </div>
               {query.data.draft.safetyReasons.length > 0 && (
-                <ul className="mt-2 text-xs text-red-700 list-disc list-inside">
+                <ul className="mt-2 text-xs text-accent-red list-disc list-inside">
                   {query.data.draft.safetyReasons.map((r, i) => (
                     <li key={i}>{r}</li>
                   ))}
@@ -153,14 +153,14 @@ export function DraftDetailPage() {
 
             <section>
               <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
                   Slide previews
                 </h2>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onDownloadSinglePng}
                     disabled={!!downloading}
-                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+                    className="rounded-md border border-border-color px-3 py-1.5 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
                   >
                     {downloading === 'png' ? 'Exporting…' : query.data.slides.length > 1 ? 'Download PNGs (ZIP)' : 'Download PNG'}
                   </button>
@@ -168,14 +168,14 @@ export function DraftDetailPage() {
                     <button
                       onClick={onDownloadPdf}
                       disabled={!!downloading}
-                      className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800 disabled:opacity-50"
+                      className="rounded-md bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
                     >
                       {downloading === 'pdf' ? 'Exporting…' : 'Download PDF'}
                     </button>
                   )}
                 </div>
               </div>
-              <p className="text-xs text-neutral-400 mb-3">
+              <p className="text-xs text-muted mb-3">
                 Rendered at native 1080px and downloaded as real image files — ready to upload to
                 LinkedIn or Instagram as-is.
               </p>
@@ -196,7 +196,7 @@ export function DraftDetailPage() {
                       projectName={projectQuery.data?.name ?? ''}
                       publicUrl={projectQuery.data?.publicUrl ?? null}
                     />
-                    <p className="mt-1.5 text-[10px] uppercase tracking-wide text-neutral-400">
+                    <p className="mt-1.5 text-[10px] uppercase tracking-wide text-muted">
                       Slide {s.slideIndex + 1} · {s.kind}
                     </p>
                   </div>
@@ -219,21 +219,21 @@ export function DraftDetailPage() {
               />
             )}
 
-            <section className="border-t border-neutral-200 pt-6">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-3">Actions</h2>
+            <section className="border-t border-border-color pt-6">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted mb-3">Actions</h2>
               {query.data.draft.status === 'pending' ? (
                 <div className="flex gap-2">
                   <button
                     onClick={() => decide.mutate('approved')}
                     disabled={decide.isPending}
-                    className="rounded-md bg-emerald-700 text-white px-3 py-1.5 text-sm font-medium hover:bg-emerald-800 disabled:opacity-50"
+                    className="rounded-md bg-accent-emerald text-white px-3 py-1.5 text-sm font-medium hover:bg-accent-emerald/90 disabled:opacity-50"
                   >
                     Approve
                   </button>
                   <button
                     onClick={() => decide.mutate('rejected')}
                     disabled={decide.isPending}
-                    className="rounded-md bg-red-700 text-white px-3 py-1.5 text-sm font-medium hover:bg-red-800 disabled:opacity-50"
+                    className="rounded-md bg-accent-red text-white px-3 py-1.5 text-sm font-medium hover:bg-accent-red/90 disabled:opacity-50"
                   >
                     Reject
                   </button>
@@ -245,18 +245,18 @@ export function DraftDetailPage() {
                     value={postUrl}
                     onChange={(e) => setPostUrl(e.target.value)}
                     placeholder="Posted URL (LinkedIn/Instagram link)"
-                    className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                    className="flex-1 rounded-md border border-border-color px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
                   />
                   <button
                     onClick={() => post.mutate(postUrl)}
                     disabled={!postUrl || post.isPending}
-                    className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
+                    className="rounded-md bg-primary text-white px-3 py-1.5 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
                   >
                     Mark posted
                   </button>
                 </div>
               ) : query.data.draft.status === 'posted' ? (
-                <p className="text-sm text-emerald-700">
+                <p className="text-sm text-accent-emerald">
                   Posted at{' '}
                   <a
                     href={query.data.draft.postedUrl ?? '#'}
@@ -268,7 +268,7 @@ export function DraftDetailPage() {
                   </a>
                 </p>
               ) : (
-                <p className="text-sm text-neutral-500">Rejected.</p>
+                <p className="text-sm text-muted">Rejected.</p>
               )}
             </section>
           </>
@@ -282,12 +282,12 @@ function CaptionBlock({ label, text, onCopy }: { label: string; text: string; on
   return (
     <section>
       <div className="flex items-baseline justify-between mb-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{label}</h2>
-        <button onClick={onCopy} className="text-xs text-neutral-600 hover:text-neutral-900 underline">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">{label}</h2>
+        <button onClick={onCopy} className="text-xs text-muted hover:text-text-primary underline">
           copy
         </button>
       </div>
-      <pre className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-sm whitespace-pre-wrap font-sans">
+      <pre className="rounded-lg border border-border-color bg-surface-2 p-4 text-sm whitespace-pre-wrap font-sans">
         {text}
       </pre>
     </section>

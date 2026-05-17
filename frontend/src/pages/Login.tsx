@@ -20,7 +20,7 @@ export function LoginPage() {
       await requestCode.mutateAsync(email.trim());
       setStage('code');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not send code');
+      setError(err instanceof ApiError ? err.message : 'send_failed');
     }
   }
 
@@ -29,86 +29,105 @@ export function LoginPage() {
     setError(null);
     try {
       await verifyCode.mutateAsync({ email: email.trim(), code: code.trim() });
-      // Auth state updates automatically; App re-renders.
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Invalid code');
+      setError(err instanceof ApiError ? err.message : 'invalid_code');
     }
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6">
+    <main className="min-h-screen flex items-center justify-center px-6 bg-background-dark text-text-primary">
       <div className="max-w-sm w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold tracking-tight">Bubbles</h1>
-          <p className="text-sm text-neutral-500 mt-1">Sign in with email</p>
+        <div className="text-center mb-10">
+          <img src="/bubbles-logo.png" alt="Bubbles" className="h-20 w-20 mx-auto" />
+          <h1 className="bubbles-gradient mt-4 font-display text-4xl font-bold tracking-wider uppercase">
+            Bubbles
+          </h1>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted mt-2">
+            Multi-agent content ops
+          </p>
         </div>
 
-        {stage === 'email' && (
-          <form onSubmit={onSubmitEmail} className="space-y-3">
-            <label className="block text-sm font-medium" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoFocus
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            />
-            <button
-              type="submit"
-              disabled={requestCode.isPending}
-              className="w-full rounded-md bg-neutral-900 text-white py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
-            >
-              {requestCode.isPending ? 'Sending…' : 'Send code'}
-            </button>
-          </form>
-        )}
+        <div className="border border-border-color bg-surface p-6 rounded-xl">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-muted mb-4">
+            [AUTH] // {stage === 'email' ? 'REQUEST_CODE' : 'VERIFY_CODE'}
+          </p>
 
-        {stage === 'code' && (
-          <form onSubmit={onSubmitCode} className="space-y-3">
-            <p className="text-sm text-neutral-600">
-              Sent a 6-digit code to <span className="font-medium">{email}</span>.
+          {stage === 'email' && (
+            <form onSubmit={onSubmitEmail} className="space-y-3">
+              <label className="block text-xs font-mono uppercase tracking-wider text-muted" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                autoFocus
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                className="w-full bg-background-dark border border-border-color rounded px-3 py-2.5 text-sm font-mono text-text-primary placeholder-muted focus:outline-none focus:border-accent-cyan transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={requestCode.isPending}
+                className="btn-bracket w-full bg-primary text-white py-2.5 hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {requestCode.isPending ? 'SENDING' : 'SEND_CODE'}
+              </button>
+            </form>
+          )}
+
+          {stage === 'code' && (
+            <form onSubmit={onSubmitCode} className="space-y-3">
+              <p className="text-xs text-muted">
+                Code sent to <span className="font-mono text-text-primary">{email}</span>.
+              </p>
+              <label className="block text-xs font-mono uppercase tracking-wider text-muted" htmlFor="code">
+                Six-digit code
+              </label>
+              <input
+                id="code"
+                inputMode="numeric"
+                pattern="\d{6}"
+                maxLength={6}
+                required
+                autoFocus
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                className="w-full bg-background-dark border border-border-color rounded px-3 py-2.5 text-lg tracking-[0.4em] text-center font-mono text-text-primary focus:outline-none focus:border-accent-cyan transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={verifyCode.isPending || code.length !== 6}
+                className="btn-bracket w-full bg-primary text-white py-2.5 hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {verifyCode.isPending ? 'VERIFYING' : 'AUTHENTICATE'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStage('email');
+                  setCode('');
+                  setError(null);
+                }}
+                className="block w-full font-mono text-[10px] uppercase tracking-wider text-muted hover:text-text-primary transition-colors"
+              >
+                ← use a different email
+              </button>
+            </form>
+          )}
+
+          {error && (
+            <p className="mt-3 font-mono text-[10px] uppercase tracking-wider text-accent-red text-center">
+              [ERROR] {error}
             </p>
-            <label className="block text-sm font-medium" htmlFor="code">
-              Code
-            </label>
-            <input
-              id="code"
-              inputMode="numeric"
-              pattern="\d{6}"
-              maxLength={6}
-              required
-              autoFocus
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm tracking-[0.4em] text-center font-mono focus:outline-none focus:ring-2 focus:ring-neutral-900"
-            />
-            <button
-              type="submit"
-              disabled={verifyCode.isPending || code.length !== 6}
-              className="w-full rounded-md bg-neutral-900 text-white py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
-            >
-              {verifyCode.isPending ? 'Verifying…' : 'Sign in'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setStage('email');
-                setCode('');
-                setError(null);
-              }}
-              className="w-full text-xs text-neutral-500 hover:text-neutral-700"
-            >
-              Use a different email
-            </button>
-          </form>
-        )}
+          )}
+        </div>
 
-        {error && <p className="mt-4 text-sm text-red-600 text-center">{error}</p>}
+        <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+          [SYSTEM_ONLINE] // Connection secure
+        </p>
       </div>
     </main>
   );

@@ -33,13 +33,13 @@ export function PipelinePage() {
   if (!projectId) return null;
 
   const graphToggle = (
-    <div className="inline-flex rounded-md border border-neutral-200 overflow-hidden text-xs">
+    <div className="inline-flex rounded-md border border-border-color overflow-hidden text-xs">
       {(['runtime', 'setup'] as const).map((p) => (
         <button
           key={p}
           onClick={() => setPipelineId(p)}
           className={`px-3 py-1.5 font-medium capitalize ${
-            pipelineId === p ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'
+            pipelineId === p ? 'bg-primary text-white' : 'bg-surface text-muted hover:bg-surface-2'
           }`}
         >
           {p}
@@ -50,7 +50,7 @@ export function PipelinePage() {
 
   return (
     <div className="min-h-screen">
-      <ProjectHeader projectId={projectId} activeTab="pipeline" rightSlot={graphToggle} />
+      <ProjectHeader projectId={projectId} page="PIPELINE" rightSlot={graphToggle} />
 
       <main className="max-w-6xl mx-auto px-6 py-6 space-y-4">
         {/* Top stat strip */}
@@ -60,14 +60,14 @@ export function PipelinePage() {
               <div className="flex items-baseline justify-between gap-2">
                 <div>
                   <span className="font-medium">{lastEvent.agentName}</span>
-                  <span className="ml-2 font-mono text-xs text-neutral-500">{lastEvent.eventType}</span>
+                  <span className="ml-2 font-mono text-xs text-muted">{lastEvent.eventType}</span>
                 </div>
-                <span className="text-xs text-neutral-500 whitespace-nowrap">
+                <span className="text-xs text-muted whitespace-nowrap">
                   {events.length} total
                 </span>
               </div>
             ) : (
-              <p className="text-xs text-neutral-400">SSE connected. No events yet.</p>
+              <p className="text-xs text-muted">SSE connected. No events yet.</p>
             )}
           </StatCard>
 
@@ -80,19 +80,19 @@ export function PipelinePage() {
                     title={`${r.id.slice(0, 8)} · ${r.status}`}
                     className={`inline-block h-2.5 w-2.5 rounded-full ${
                       r.status === 'completed'
-                        ? 'bg-emerald-500'
+                        ? 'bg-accent-emerald/100'
                         : r.status === 'failed'
-                          ? 'bg-red-500'
-                          : 'bg-blue-500 animate-pulse'
+                          ? 'bg-accent-red/100'
+                          : 'bg-accent-cyan/100 animate-pulse'
                     }`}
                   />
                 ))}
-                <span className="ml-2 text-xs text-neutral-500">
+                <span className="ml-2 text-xs text-muted">
                   {runs.data.runs.length} total
                 </span>
               </div>
             ) : (
-              <p className="text-xs text-neutral-400">No runs yet.</p>
+              <p className="text-xs text-muted">No runs yet.</p>
             )}
           </StatCard>
 
@@ -107,16 +107,16 @@ export function PipelinePage() {
         <section>
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="text-base font-semibold tracking-tight capitalize">{pipelineId} graph</h2>
-            {triggerError && <span className="text-xs text-red-600">{triggerError}</span>}
+            {triggerError && <span className="text-xs text-accent-red">{triggerError}</span>}
           </div>
-          {graph.isLoading && <p className="text-sm text-neutral-500">Loading graph…</p>}
+          {graph.isLoading && <p className="text-sm text-muted">Loading graph…</p>}
           {graph.data && <PipelineGraphView graph={graph.data} nodeStatus={nodeStatus} />}
-          <p className="text-xs text-neutral-500 mt-2">
+          <p className="text-xs text-muted mt-2">
             Nodes pulse when running, turn green on completion, red on failure. A successful runtime
             run produces a Draft in the Drafts queue.
           </p>
           {pipelineId === 'runtime' && !setupReady && (
-            <p className="text-xs text-amber-700 mt-1">
+            <p className="text-xs text-accent-amber mt-1">
               Setup isn't ready yet — go back to the project, save a brief, and run setup. Generate
               now will be enabled once at least one persona and one theme exist.
             </p>
@@ -126,20 +126,20 @@ export function PipelinePage() {
         {/* Live event timeline (this session) */}
         {events.length > 0 && (
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
               Event timeline · this session
             </h2>
-            <div className="rounded-lg border border-neutral-200 overflow-hidden divide-y divide-neutral-100 max-h-96 overflow-y-auto">
+            <div className="rounded-lg border border-border-color overflow-hidden divide-y divide-border-color max-h-96 overflow-y-auto">
               {runIdsInOrder.map((runId) => {
                 const runEvents = eventsByRun.get(runId)!;
                 const startedAt = runEvents[0]?.at;
                 return (
-                  <div key={runId} className="p-3 bg-neutral-50/40">
+                  <div key={runId} className="p-3 bg-surface-2/40">
                     <div className="flex items-baseline justify-between text-xs mb-2">
-                      <span className="font-mono text-neutral-500">
+                      <span className="font-mono text-muted">
                         run {runId.slice(0, 8)}
                       </span>
-                      <span className="text-neutral-400">
+                      <span className="text-muted">
                         {startedAt ? new Date(startedAt).toLocaleString() : ''}
                       </span>
                     </div>
@@ -149,30 +149,30 @@ export function PipelinePage() {
                           key={`${e.nodeId}-${e.eventType}-${i}`}
                           className="text-xs grid grid-cols-[80px_120px_1fr_auto] gap-2 font-mono"
                         >
-                          <span className="text-neutral-400">
+                          <span className="text-muted">
                             {new Date(e.at).toLocaleTimeString([], { hour12: false })}
                           </span>
                           <span
                             className={
                               e.eventType === 'finished'
-                                ? 'text-emerald-700'
+                                ? 'text-accent-emerald'
                                 : e.eventType === 'failed'
-                                  ? 'text-red-700'
+                                  ? 'text-accent-red'
                                   : e.eventType === 'started'
-                                    ? 'text-blue-700'
-                                    : 'text-neutral-500'
+                                    ? 'text-accent-cyan'
+                                    : 'text-muted'
                             }
                           >
                             {e.eventType}
                           </span>
-                          <span className="font-sans font-medium text-neutral-800">
+                          <span className="font-sans font-medium text-text-primary">
                             {e.agentName}
                           </span>
-                          <span className="text-neutral-500">
+                          <span className="text-muted">
                             {e.durationMs != null ? `${e.durationMs}ms` : ''}
                           </span>
                           {e.errorMessage && (
-                            <span className="col-span-4 text-red-600 font-sans pl-[210px] break-all">
+                            <span className="col-span-4 text-accent-red font-sans pl-[210px] break-all">
                               ↳ {e.errorMessage}
                             </span>
                           )}
@@ -183,7 +183,7 @@ export function PipelinePage() {
                 );
               })}
             </div>
-            <p className="text-xs text-neutral-400 mt-1">
+            <p className="text-xs text-muted mt-1">
               Live events received in this browser session. Refreshing clears the list (DB has the
               full history; clicking a run below will show its events in a future update).
             </p>
@@ -193,12 +193,12 @@ export function PipelinePage() {
         {/* Runs list */}
         {runs.data && runs.data.runs.length > 0 && (
           <section>
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
               Run history
             </h2>
-            <div className="rounded-lg border border-neutral-200 overflow-hidden">
+            <div className="rounded-lg border border-border-color overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+                <thead className="bg-surface-2 text-xs uppercase tracking-wide text-muted">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">Run</th>
                     <th className="text-left px-3 py-2 font-medium">Pipeline</th>
@@ -207,28 +207,28 @@ export function PipelinePage() {
                     <th className="text-left px-3 py-2 font-medium">Error</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-200">
+                <tbody className="divide-y divide-border-color">
                   {runs.data.runs.map((r) => (
-                    <tr key={r.id} className="hover:bg-neutral-50">
+                    <tr key={r.id} className="hover:bg-surface-2">
                       <td className="px-3 py-2 font-mono text-xs">{r.id.slice(0, 8)}</td>
-                      <td className="px-3 py-2 text-xs text-neutral-600 capitalize">{r.pipeline}</td>
-                      <td className="px-3 py-2 text-xs text-neutral-600">
+                      <td className="px-3 py-2 text-xs text-muted capitalize">{r.pipeline}</td>
+                      <td className="px-3 py-2 text-xs text-muted">
                         {new Date(r.startedAt).toLocaleString()}
                       </td>
                       <td className="px-3 py-2 text-xs">
                         <span
                           className={
                             r.status === 'completed'
-                              ? 'text-emerald-700'
+                              ? 'text-accent-emerald'
                               : r.status === 'failed'
-                                ? 'text-red-700'
-                                : 'text-blue-700'
+                                ? 'text-accent-red'
+                                : 'text-accent-cyan'
                           }
                         >
                           {r.status}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-xs text-red-600 max-w-md">
+                      <td className="px-3 py-2 text-xs text-accent-red max-w-md">
                         {r.error ? <code className="break-all whitespace-pre-wrap">{r.error}</code> : ''}
                       </td>
                     </tr>
@@ -245,8 +245,8 @@ export function PipelinePage() {
 
 function StatCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-neutral-200 p-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500 mb-1.5">
+    <div className="rounded-lg border border-border-color p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted mb-1.5">
         {label}
       </p>
       {children}

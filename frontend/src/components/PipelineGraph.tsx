@@ -59,10 +59,10 @@ function layout(graph: PipelineGraph): Map<string, { x: number; y: number }> {
 }
 
 const statusColors: Record<NodeStatus, { border: string; bg: string; text: string }> = {
-  idle: { border: 'border-neutral-300', bg: 'bg-white', text: 'text-neutral-700' },
-  running: { border: 'border-blue-400', bg: 'bg-blue-50', text: 'text-blue-800' },
-  done: { border: 'border-emerald-400', bg: 'bg-emerald-50', text: 'text-emerald-800' },
-  failed: { border: 'border-red-400', bg: 'bg-red-50', text: 'text-red-800' },
+  idle: { border: 'border-border-color', bg: 'bg-surface', text: 'text-text-primary' },
+  running: { border: 'border-accent-cyan', bg: 'bg-accent-cyan/10', text: 'text-accent-cyan' },
+  done: { border: 'border-accent-emerald', bg: 'bg-accent-emerald/10', text: 'text-accent-emerald' },
+  failed: { border: 'border-accent-red', bg: 'bg-accent-red/10', text: 'text-accent-red' },
 };
 
 export function PipelineGraphView({ graph, nodeStatus }: Props) {
@@ -111,7 +111,7 @@ export function PipelineGraphView({ graph, nodeStatus }: Props) {
   );
 
   return (
-    <div className="h-[380px] w-full rounded-lg border border-neutral-200 bg-neutral-50">
+    <div className="h-[380px] w-full rounded-lg border border-border-color bg-surface">
       <ReactFlow
         nodes={nodes}
         edges={edges}

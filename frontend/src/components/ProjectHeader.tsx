@@ -1,116 +1,70 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocation } from 'wouter';
 import { api, ApiError } from '../lib/api';
 import type { Project } from '../lib/projects';
-import { useDrafts } from '../lib/drafts';
 import { useTriggerRun } from '../lib/pipeline';
 import { useSetupOutputs } from '../lib/setup';
 
-type Tab = 'overview' | 'pipeline' | 'drafts';
-
 interface Props {
   projectId: string;
-  activeTab: Tab;
+  page: 'DASHBOARD' | 'BRAND' | 'POSTS' | 'PIPELINE' | 'SETTINGS' | 'INSPECTOR';
   rightSlot?: React.ReactNode;
 }
 
 /**
- * Shared header for every page inside a project. Tabs across the top let the
- * operator flip between Overview / Pipeline / Drafts without bouncing back to
- * the projects list. A permanent "Generate now" button sits to the right and
- * is one click from anywhere in the project.
- *
- * Each page also calls useQuery(['projects', id]) — React Query dedupes so
- * we don't refetch when this component does too.
+ * Content-area header for every page inside a project. Sidebar handles nav;
+ * this header sits at the top of the main column and carries:
+ *   - 'INIT_PIPELINE // PROJECT_NAME // PAGE' uppercase mono breadcrumb
+ *   - optional page-specific control (right slot)
+ *   - persistent [GENERATE_POST] button — disabled until brand setup is ready
  */
-export function ProjectHeader({ projectId, activeTab, rightSlot }: Props) {
+export function ProjectHeader({ projectId, page, rightSlot }: Props) {
   const projectQuery = useQuery({
     queryKey: ['projects', projectId],
     queryFn: () => api<{ project: Project }>(`/api/projects/${projectId}`).then((r) => r.project),
   });
-  const drafts = useDrafts(projectId, 'pending');
   const setup = useSetupOutputs(projectId);
-  const setupReady =
-    !!setup.data && setup.data.personas.length > 0 && setup.data.themes.length > 0;
+  const setupReady = !!setup.data && setup.data.personas.length > 0 && setup.data.themes.length > 0;
   const trigger = useTriggerRun(projectId);
   const triggerError = trigger.error instanceof ApiError ? trigger.error.message : null;
-  const [location] = useLocation();
-  void location;
 
   const project = projectQuery.data;
-  const pendingCount = drafts.data?.length ?? 0;
-
-  const tabs: { key: Tab; label: string; href: string; badge?: number }[] = [
-    { key: 'overview', label: 'Overview', href: `/projects/${projectId}` },
-    { key: 'pipeline', label: 'Pipeline', href: `/projects/${projectId}/pipeline` },
-    {
-      key: 'drafts',
-      label: 'Drafts',
-      href: `/projects/${projectId}/drafts`,
-      badge: pendingCount,
-    },
-  ];
+  const projectCode = (project?.name ?? 'PROJECT')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 20);
 
   return (
-    <header className="border-b border-neutral-200 bg-white sticky top-0 z-10">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 text-sm min-w-0">
-            <Link href="/" className="text-neutral-500 hover:text-neutral-900 shrink-0">
-              ← All projects
-            </Link>
-            <span className="text-neutral-300 shrink-0">/</span>
-            <span className="font-semibold truncate">{project?.name ?? '…'}</span>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {rightSlot}
-            <button
-              onClick={() => trigger.mutate()}
-              disabled={trigger.isPending || !setupReady}
-              className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 whitespace-nowrap"
-              title={
-                !setupReady
-                  ? 'Run setup first to unlock generation'
-                  : 'Trigger the runtime pipeline (~$0.005). New draft will land in Drafts.'
-              }
-            >
-              {trigger.isPending ? 'Generating…' : '⚡ Generate now'}
-            </button>
-          </div>
+    <div className="px-6 py-4 border-b border-border-color bg-background-dark sticky top-0 z-10">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-mono text-[11px] uppercase tracking-wider text-muted truncate">
+          <span className="text-accent-cyan">[BUBBLES]</span>
+          <span className="mx-2 opacity-50">//</span>
+          <span className="text-text-primary">{projectCode}</span>
+          <span className="mx-2 opacity-50">//</span>
+          <span>{page}</span>
+        </p>
+        <div className="flex items-center gap-2 shrink-0">
+          {rightSlot}
+          <button
+            onClick={() => trigger.mutate()}
+            disabled={trigger.isPending || !setupReady}
+            className="btn-bracket bg-primary text-white px-3 py-1.5 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            title={
+              !setupReady
+                ? 'Run brand setup first (personas + themes required)'
+                : 'Real LLM run — produces a draft, ~$0.005 in tokens'
+            }
+          >
+            {trigger.isPending ? 'GENERATING' : 'GENERATE_POST'}
+          </button>
         </div>
-        <nav className="flex gap-1 -mb-px text-sm">
-          {tabs.map((t) => {
-            const active = t.key === activeTab;
-            return (
-              <Link
-                key={t.key}
-                href={t.href}
-                className={`px-4 py-2 border-b-2 transition-colors ${
-                  active
-                    ? 'border-neutral-900 font-medium text-neutral-900'
-                    : 'border-transparent text-neutral-500 hover:text-neutral-900'
-                }`}
-              >
-                {t.label}
-                {t.badge ? (
-                  <span
-                    className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                      active ? 'bg-neutral-900 text-white' : 'bg-amber-100 text-amber-800'
-                    }`}
-                  >
-                    {t.badge}
-                  </span>
-                ) : null}
-              </Link>
-            );
-          })}
-        </nav>
       </div>
       {triggerError && (
-        <div className="bg-red-50 border-t border-red-200 px-6 py-2 text-xs text-red-700 max-w-6xl mx-auto">
-          Generate failed: {triggerError}
-        </div>
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-accent-red">
+          [ERROR] {triggerError}
+        </p>
       )}
-    </header>
+    </div>
   );
 }

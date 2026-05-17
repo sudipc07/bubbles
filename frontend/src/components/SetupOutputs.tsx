@@ -24,7 +24,7 @@ export function SetupOutputsView({ data, projectId }: ViewProps) {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-xs leading-relaxed text-amber-900">
+      <div className="rounded-md bg-accent-amber/10 border border-accent-amber/40 p-3 text-xs leading-relaxed text-accent-amber">
         <p className="font-semibold mb-1">What this section is — and isn't</p>
         <p>
           Setup produces the <em>configuration</em> for this brand: audiences, voices, personas,
@@ -68,7 +68,7 @@ function DeleteButton({
       }}
       disabled={del.isPending}
       title={`Delete ${label}`}
-      className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-700 disabled:opacity-40"
+      className="absolute top-2 right-2 h-6 w-6 flex items-center justify-center rounded-md text-muted hover:bg-accent-red/10 hover:text-accent-red disabled:opacity-40"
     >
       ×
     </button>
@@ -79,7 +79,7 @@ function SectionTitle({ title, count }: { title: string; count: number }) {
   return (
     <div className="flex items-baseline justify-between mb-3">
       <h2 className="text-base font-semibold tracking-tight">{title}</h2>
-      <span className="text-xs text-neutral-500">{count}</span>
+      <span className="text-xs text-muted">{count}</span>
     </div>
   );
 }
@@ -134,13 +134,13 @@ function BrandKitCard({
   return (
     <section>
       <SectionTitle title="Brand kit" count={5} />
-      <div className="rounded-lg border border-neutral-200 p-4">
+      <div className="rounded-lg border border-border-color p-4">
         <div className="grid grid-cols-5 gap-2 mb-4">
           {PALETTE_ORDER.map((key) => (
             <div key={key} className="text-center">
               <label className="block cursor-pointer" title="Click to change">
                 <div
-                  className="h-16 w-full rounded-md border border-neutral-200 transition-transform hover:scale-[1.02]"
+                  className="h-16 w-full rounded-md border border-border-color transition-transform hover:scale-[1.02]"
                   style={{ backgroundColor: palette[key] }}
                 />
                 <input
@@ -152,7 +152,7 @@ function BrandKitCard({
                   className="sr-only"
                 />
               </label>
-              <p className="mt-1.5 text-[10px] uppercase tracking-wide text-neutral-500">{key}</p>
+              <p className="mt-1.5 text-[10px] uppercase tracking-wide text-muted">{key}</p>
               <input
                 type="text"
                 value={palette[key]}
@@ -161,7 +161,7 @@ function BrandKitCard({
                   setPalette({ ...palette, [key]: v });
                 }}
                 spellCheck={false}
-                className="mt-0.5 w-full bg-transparent text-center text-xs font-mono focus:outline-none focus:bg-neutral-50 rounded px-1"
+                className="mt-0.5 w-full bg-transparent text-center text-xs font-mono focus:outline-none focus:bg-surface-2 rounded px-1"
               />
             </div>
           ))}
@@ -178,17 +178,17 @@ function BrandKitCard({
             onChange={(v) => setFonts({ ...fonts, body: v })}
           />
         </div>
-        <div className="mt-4 flex items-center gap-3 border-t border-neutral-100 pt-3">
+        <div className="mt-4 flex items-center gap-3 border-t border-border-color pt-3">
           <button
             type="button"
             onClick={onSave}
             disabled={!dirty || update.isPending}
-            className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800 disabled:opacity-50"
+            className="rounded-md bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary/90 disabled:opacity-50"
           >
             {update.isPending ? 'Saving…' : 'Save brand kit'}
           </button>
-          {saved && <span className="text-xs text-emerald-700">Saved.</span>}
-          {!dirty && !saved && <span className="text-xs text-neutral-400">Click a swatch to edit.</span>}
+          {saved && <span className="text-xs text-accent-emerald">Saved.</span>}
+          {!dirty && !saved && <span className="text-xs text-muted">Click a swatch to edit.</span>}
         </div>
       </div>
     </section>
@@ -199,11 +199,11 @@ function FontPicker({ label, value, onChange }: { label: string; value: string; 
   const isCustom = !SAFE_FONTS.includes(value as (typeof SAFE_FONTS)[number]);
   return (
     <div>
-      <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">{label}</p>
+      <p className="text-xs text-muted uppercase tracking-wide mb-1">{label}</p>
       <select
         value={isCustom ? '__custom' : value}
         onChange={(e) => onChange(e.target.value === '__custom' ? value : e.target.value)}
-        className="text-lg bg-transparent border-b border-transparent hover:border-neutral-300 focus:border-neutral-900 focus:outline-none cursor-pointer"
+        className="text-lg bg-transparent border-b border-transparent hover:border-border-color focus:border-accent-cyan focus:outline-none cursor-pointer"
         style={{ fontFamily: value }}
       >
         {SAFE_FONTS.map((f) => (
@@ -229,14 +229,14 @@ function AudiencesSection({
       <SectionTitle title="Audiences" count={audiences.length} />
       <div className="grid md:grid-cols-2 gap-3">
         {audiences.map((a) => (
-          <div key={a.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+          <div key={a.id} className="relative rounded-lg border border-border-color p-4 pr-10">
             <DeleteButton projectId={projectId} kind="audiences" id={a.id} label={a.name} />
             <p className="font-medium">{a.name}</p>
-            <p className="mt-1 text-sm text-neutral-600">{a.summary}</p>
+            <p className="mt-1 text-sm text-muted">{a.summary}</p>
             {a.traits.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {a.traits.map((t) => (
-                  <span key={t} className="rounded-full bg-neutral-100 text-xs px-2 py-0.5 text-neutral-700">
+                  <span key={t} className="rounded-full bg-surface-2 text-xs px-2 py-0.5 text-text-primary">
                     {t}
                   </span>
                 ))}
@@ -261,12 +261,12 @@ function VoicesSection({
       <SectionTitle title="Voice directions" count={voices.length} />
       <div className="grid md:grid-cols-2 gap-3">
         {voices.map((v) => (
-          <div key={v.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+          <div key={v.id} className="relative rounded-lg border border-border-color p-4 pr-10">
             <DeleteButton projectId={projectId} kind="voices" id={v.id} label={v.name} />
             <p className="font-medium">{v.name}</p>
-            <p className="mt-1 text-sm text-neutral-600">{v.description}</p>
+            <p className="mt-1 text-sm text-muted">{v.description}</p>
             {v.examples.length > 0 && (
-              <ul className="mt-2 space-y-1 text-xs italic text-neutral-700 border-l-2 border-neutral-200 pl-3">
+              <ul className="mt-2 space-y-1 text-xs italic text-text-primary border-l-2 border-border-color pl-3">
                 {v.examples.map((ex, i) => (
                   <li key={i}>"{ex}"</li>
                 ))}
@@ -295,28 +295,28 @@ function PersonasSection({
         {personas.map((p) => {
           const personaSamples = samples.filter((s) => s.personaId === p.id);
           return (
-            <div key={p.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+            <div key={p.id} className="relative rounded-lg border border-border-color p-4 pr-10">
               <DeleteButton projectId={projectId} kind="personas" id={p.id} label={p.name} />
               <div className="flex items-baseline justify-between mb-1">
                 <p className="font-medium">{p.name}</p>
-                <p className="text-xs text-neutral-500 font-mono">
+                <p className="text-xs text-muted font-mono">
                   carousel {p.formatMixCarouselPct}% · single {p.formatMixSinglePct}%
                 </p>
               </div>
-              <p className="text-sm text-neutral-600">{p.description}</p>
+              <p className="text-sm text-muted">{p.description}</p>
               {personaSamples.length > 0 && (
                 <>
-                  <p className="mt-4 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                  <p className="mt-4 text-[10px] font-semibold uppercase tracking-wide text-accent-amber">
                     Sample posts · preview only · never published
                   </p>
                   <div className="mt-1 grid md:grid-cols-2 gap-2">
                     {personaSamples.map((s) => (
-                      <div key={s.id} className="rounded-md bg-amber-50/40 border border-amber-100 p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+                      <div key={s.id} className="rounded-md bg-accent-amber/10/40 border border-amber-100 p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">
                           {s.format.replace('_', ' ')}
                         </p>
                         <p className="text-sm font-medium mt-0.5">{s.title}</p>
-                        <p className="mt-1 text-xs text-neutral-700 whitespace-pre-wrap leading-relaxed">
+                        <p className="mt-1 text-xs text-text-primary whitespace-pre-wrap leading-relaxed">
                           {s.body}
                         </p>
                       </div>
@@ -344,12 +344,12 @@ function ThemesSection({
       <SectionTitle title="Themes" count={themes.length} />
       <div className="grid md:grid-cols-2 gap-3">
         {themes.map((t) => (
-          <div key={t.id} className="relative rounded-lg border border-neutral-200 p-4 pr-10">
+          <div key={t.id} className="relative rounded-lg border border-border-color p-4 pr-10">
             <DeleteButton projectId={projectId} kind="themes" id={t.id} label={t.label} />
             <p className="font-medium">{t.label}</p>
-            <p className="mt-1 text-sm text-neutral-600">{t.description}</p>
+            <p className="mt-1 text-sm text-muted">{t.description}</p>
             {t.exampleAngles.length > 0 && (
-              <ul className="mt-2 space-y-0.5 text-xs text-neutral-500 list-disc list-inside">
+              <ul className="mt-2 space-y-0.5 text-xs text-muted list-disc list-inside">
                 {t.exampleAngles.map((a, i) => (
                   <li key={i}>{a}</li>
                 ))}

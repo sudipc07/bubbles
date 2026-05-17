@@ -45,7 +45,7 @@ export function SlidePreview({ slide, totalSlides, kit, format, projectName, pub
 
   return (
     <div
-      className="relative w-full overflow-hidden rounded-xl border border-neutral-200 shadow-sm bg-neutral-100"
+      className="relative w-full overflow-hidden rounded-xl border border-border-color shadow-sm bg-surface-2"
       style={{ aspectRatio: `${W} / ${H}` }}
     >
       <div

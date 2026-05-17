@@ -12,13 +12,13 @@ export function DraftsPage() {
   if (!projectId) return null;
 
   const filterToggle = (
-    <div className="inline-flex rounded-md border border-neutral-200 overflow-hidden text-xs">
+    <div className="inline-flex rounded-md border border-border-color overflow-hidden text-xs">
       {(['all', 'pending', 'decided'] as const).map((f) => (
         <button
           key={f}
           onClick={() => setFilter(f)}
           className={`px-3 py-1.5 font-medium capitalize ${
-            filter === f ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'
+            filter === f ? 'bg-primary text-white' : 'bg-surface text-muted hover:bg-surface-2'
           }`}
         >
           {f}
@@ -29,20 +29,20 @@ export function DraftsPage() {
 
   return (
     <div className="min-h-screen">
-      <ProjectHeader projectId={projectId} activeTab="drafts" rightSlot={filterToggle} />
+      <ProjectHeader projectId={projectId} page="POSTS" rightSlot={filterToggle} />
 
       <main className="max-w-6xl mx-auto px-6 py-6">
-        {drafts.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+        {drafts.isLoading && <p className="text-sm text-muted">Loading…</p>}
         {drafts.data && drafts.data.length === 0 && (
-          <div className="rounded-lg border border-dashed border-neutral-300 p-10 text-center space-y-3">
-            <p className="text-sm text-neutral-700 font-medium">No drafts in this queue yet</p>
-            <p className="text-xs text-neutral-500 max-w-md mx-auto">
+          <div className="rounded-lg border border-dashed border-border-color p-10 text-center space-y-3">
+            <p className="text-sm text-text-primary font-medium">No drafts in this queue yet</p>
+            <p className="text-xs text-muted max-w-md mx-auto">
               Drafts are produced by the <em>runtime</em> pipeline (Pipeline tab → Generate now).
               Setup samples are previews and don't appear here.
             </p>
             <Link
               href={`/projects/${projectId}/pipeline`}
-              className="inline-block rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
+              className="inline-block rounded-md bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary/90"
             >
               Open Pipeline →
             </Link>
@@ -54,12 +54,12 @@ export function DraftsPage() {
               <li key={d.id}>
                 <Link
                   href={`/projects/${projectId}/drafts/${d.id}`}
-                  className="block rounded-lg border border-neutral-200 p-4 hover:bg-neutral-50 transition-colors"
+                  className="block rounded-lg border border-border-color p-4 hover:bg-surface-2 transition-colors"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{d.topicTitle}</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">
+                      <p className="text-xs text-muted mt-0.5">
                         {d.format.replace('_', ' ')}
                         {d.angle && <span> · {d.angle}</span>}
                       </p>
@@ -75,7 +75,7 @@ export function DraftsPage() {
                       <StatusPill status={d.status} />
                     </div>
                   </div>
-                  <p className="text-xs text-neutral-400 mt-1">
+                  <p className="text-xs text-muted mt-1">
                     {new Date(d.createdAt).toLocaleString()}
                   </p>
                 </Link>
@@ -92,13 +92,13 @@ type Variant = 'good' | 'meh' | 'bad' | 'neutral';
 function variantClasses(v: Variant): string {
   switch (v) {
     case 'good':
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      return 'bg-accent-emerald/10 text-accent-emerald border-accent-emerald/40';
     case 'meh':
-      return 'bg-amber-50 text-amber-700 border-amber-200';
+      return 'bg-accent-amber/10 text-accent-amber border-accent-amber/40';
     case 'bad':
-      return 'bg-red-50 text-red-700 border-red-200';
+      return 'bg-accent-red/10 text-accent-red border-accent-red/40';
     default:
-      return 'bg-neutral-100 text-neutral-700 border-neutral-200';
+      return 'bg-surface-2 text-text-primary border-border-color';
   }
 }
 

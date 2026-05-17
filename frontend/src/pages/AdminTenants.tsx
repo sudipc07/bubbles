@@ -36,13 +36,13 @@ export function AdminTenantsPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-neutral-200">
+      <header className="border-b border-border-color">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-neutral-500 hover:text-neutral-900 text-sm">
+            <Link href="/" className="text-muted hover:text-text-primary text-sm">
               ← Projects
             </Link>
-            <span className="text-neutral-300 text-sm">/</span>
+            <span className="text-muted text-sm">/</span>
             <h1 className="text-lg font-semibold">Admin</h1>
           </div>
         </div>
@@ -50,7 +50,7 @@ export function AdminTenantsPage() {
 
       <main className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         <section>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted mb-3">
             Platform spend
           </h2>
           <div className="grid grid-cols-2 gap-4 max-w-md">
@@ -60,17 +60,17 @@ export function AdminTenantsPage() {
         </section>
 
         <section>
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted mb-3">
             Tenants ({tenants.data?.length ?? 0})
           </h2>
-          {tenants.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+          {tenants.isLoading && <p className="text-sm text-muted">Loading…</p>}
           {tenants.data && tenants.data.length === 0 && (
-            <p className="text-sm text-neutral-500">No tenants yet.</p>
+            <p className="text-sm text-muted">No tenants yet.</p>
           )}
           {tenants.data && tenants.data.length > 0 && (
-            <div className="rounded-lg border border-neutral-200 overflow-hidden">
+            <div className="rounded-lg border border-border-color overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-neutral-50 text-xs uppercase tracking-wide text-neutral-500">
+                <thead className="bg-surface-2 text-xs uppercase tracking-wide text-muted">
                   <tr>
                     <Th>Project</Th>
                     <Th>Owner</Th>
@@ -80,16 +80,16 @@ export function AdminTenantsPage() {
                     <Th>Last run</Th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-200">
+                <tbody className="divide-y divide-border-color">
                   {tenants.data.map((t) => (
-                    <tr key={t.id} className="hover:bg-neutral-50">
+                    <tr key={t.id} className="hover:bg-surface-2">
                       <Td>
                         <Link href={`/projects/${t.id}`} className="font-medium hover:underline">
                           {t.name}
                         </Link>
-                        <p className="text-xs text-neutral-500 font-mono">{t.slug}</p>
+                        <p className="text-xs text-muted font-mono">{t.slug}</p>
                       </Td>
-                      <Td className="text-neutral-600">{t.ownerEmail}</Td>
+                      <Td className="text-muted">{t.ownerEmail}</Td>
                       <Td>
                         <select
                           value={t.status}
@@ -100,7 +100,7 @@ export function AdminTenantsPage() {
                               status: e.target.value as 'active' | 'paused' | 'archived',
                             })
                           }
-                          className="rounded-md border border-neutral-200 bg-white px-2 py-1 text-xs"
+                          className="rounded-md border border-border-color bg-surface px-2 py-1 text-xs"
                         >
                           <option value="active">active</option>
                           <option value="paused">paused</option>
@@ -108,15 +108,15 @@ export function AdminTenantsPage() {
                         </select>
                       </Td>
                       <Td className="text-right font-mono">${t.monthlySpendUsd.toFixed(2)}</Td>
-                      <Td className="text-right font-mono text-neutral-500">${t.monthlyCostCeilingUsd}</Td>
-                      <Td className="text-xs text-neutral-500">
+                      <Td className="text-right font-mono text-muted">${t.monthlyCostCeilingUsd}</Td>
+                      <Td className="text-xs text-muted">
                         {t.lastRunAt ? (
                           <>
                             {new Date(t.lastRunAt).toLocaleString()}{' '}
-                            <span className="font-mono text-neutral-400">· {t.lastRunStatus}</span>
+                            <span className="font-mono text-muted">· {t.lastRunStatus}</span>
                           </>
                         ) : (
-                          <span className="text-neutral-400">never</span>
+                          <span className="text-muted">never</span>
                         )}
                       </Td>
                     </tr>
@@ -133,8 +133,8 @@ export function AdminTenantsPage() {
 
 function CostCard({ label, value }: { label: string; value: number | undefined }) {
   return (
-    <div className="rounded-lg border border-neutral-200 p-4">
-      <p className="text-xs text-neutral-500">{label}</p>
+    <div className="rounded-lg border border-border-color p-4">
+      <p className="text-xs text-muted">{label}</p>
       <p className="mt-1 text-2xl font-semibold font-mono">
         {value == null ? '…' : `$${value.toFixed(2)}`}
       </p>

@@ -25,25 +25,29 @@ export function ProjectDetailPage() {
   if (!id) return null;
 
   return (
-    <div className="min-h-screen">
-      <ProjectHeader projectId={id} activeTab="overview" />
+    <div className="min-h-full">
+      <ProjectHeader projectId={id} page="DASHBOARD" />
       <main className="max-w-6xl mx-auto px-6 py-8">
-        {query.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
-        {query.error && <p className="text-sm text-red-600">Could not load project.</p>}
+        {query.isLoading && (
+          <p className="font-mono text-xs uppercase tracking-wider text-muted">[LOADING] // Project</p>
+        )}
+        {query.error && (
+          <p className="font-mono text-xs uppercase tracking-wider text-accent-red">[ERROR] // Could not load project</p>
+        )}
         {project && (
           <>
-            <div className="mb-6">
-              <p className="text-xs text-neutral-500 font-mono">{project.slug}</p>
-              <p className="text-xs text-neutral-500 mt-1">
-                Status <span className="font-mono">{project.status}</span> · Monthly cost ceiling{' '}
-                <span className="font-mono">${project.monthlyCostCeilingUsd}</span>
+            <header className="mb-6">
+              <h1 className="font-display text-3xl font-bold tracking-tight">{project.name}</h1>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted mt-1">
+                {project.slug} · STATUS: <span className="text-text-primary">{project.status}</span>{' '}
+                · MONTHLY_CAP: <span className="text-text-primary">${project.monthlyCostCeilingUsd}</span>
               </p>
-            </div>
+            </header>
 
             <NextSteps project={project} />
             <DashboardStrip project={project} />
             <BriefForm project={project} />
-            <hr className="my-10 border-neutral-200" />
+            <hr className="my-10 border-border-color" />
             <SetupSection project={project} />
           </>
         )}
@@ -93,7 +97,7 @@ function SetupSection({ project }: { project: Project }) {
       <div className="flex items-baseline justify-between">
         <div>
           <h2 className="text-base font-semibold tracking-tight">Setup outputs</h2>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <p className="text-xs text-muted mt-0.5">
             Runs all 7 setup agents (Parser → Audience → Voice → Persona → Theme → Brand Kit →
             Sample). About 20-40 seconds, ~$0.003 in LLM cost.
           </p>
@@ -101,41 +105,41 @@ function SetupSection({ project }: { project: Project }) {
         <button
           onClick={() => run.mutate()}
           disabled={!briefReady || run.isPending || isRunning}
-          className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50 whitespace-nowrap"
+          className="rounded-md bg-primary text-white px-3 py-1.5 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 whitespace-nowrap"
           title={!briefReady ? 'Save a brief of at least 30 characters first' : undefined}
         >
           {showProgress ? 'Running…' : hasOutputs ? 'Re-run setup' : 'Run setup'}
         </button>
       </div>
 
-      {errorMessage && <p className="text-xs text-red-600">{errorMessage}</p>}
+      {errorMessage && <p className="text-xs text-accent-red">{errorMessage}</p>}
       {!briefReady && (
-        <p className="text-xs text-amber-700">
+        <p className="text-xs text-accent-amber">
           Save a brief above (30+ characters) before running setup. The Parser needs something to
           read.
         </p>
       )}
 
       {showProgress && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+        <div className="rounded-lg border border-accent-cyan/40 bg-accent-cyan/10 p-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-blue-900">
+            <span className="font-medium text-text-primary">
               {currentNode
                 ? `Running ${SETUP_LABELS[currentNode] ?? currentNode}…`
                 : 'Starting setup pipeline…'}
             </span>
-            <span className="font-mono text-blue-700">
+            <span className="font-mono text-accent-cyan">
               {completedSetupNodes} / {SETUP_NODES.length}
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full bg-blue-100 rounded overflow-hidden">
+          <div className="mt-2 h-1.5 w-full bg-accent-cyan/20 rounded overflow-hidden">
             <div
-              className="h-full bg-blue-600 transition-all"
+              className="h-full bg-accent-cyan transition-all"
               style={{ width: `${(completedSetupNodes / SETUP_NODES.length) * 100}%` }}
             />
           </div>
           {lastEvent && (
-            <p className="mt-2 text-[10px] text-blue-700 font-mono">
+            <p className="mt-2 text-[10px] text-accent-cyan font-mono">
               latest: {lastEvent.agentName} · {lastEvent.eventType}
               {lastEvent.durationMs != null && ` · ${lastEvent.durationMs}ms`}
             </p>
@@ -143,11 +147,11 @@ function SetupSection({ project }: { project: Project }) {
         </div>
       )}
 
-      {setup.isLoading && <p className="text-xs text-neutral-500">Loading outputs…</p>}
+      {setup.isLoading && <p className="text-xs text-muted">Loading outputs…</p>}
 
       {setup.data && hasOutputs && <SetupOutputsView data={setup.data} projectId={project.id} />}
       {setup.data && !hasOutputs && !showProgress && (
-        <p className="text-xs text-neutral-400 italic">
+        <p className="text-xs text-muted italic">
           No setup outputs yet. Click "Run setup" once your brief is in.
         </p>
       )}
@@ -172,13 +176,13 @@ function NextSteps({ project }: { project: Project }) {
 
   return (
     <section className="mb-6 space-y-2">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
         {setupTodo ? 'Get started' : 'Workflow'}
       </h2>
 
       {/* One-time setup checklist — collapses to a single done line once both are complete */}
       {setupTodo ? (
-        <div className="rounded-lg border border-neutral-200 bg-white p-3 space-y-2">
+        <div className="rounded-lg border border-border-color bg-surface p-3 space-y-2">
           <StepRow
             n={1}
             label="Write the brief"
@@ -195,45 +199,45 @@ function NextSteps({ project }: { project: Project }) {
             current={briefDone && !setupDone}
             cta={
               briefDone && !setupDone ? (
-                <span className="text-xs text-neutral-500">↓ Run setup below</span>
+                <span className="text-xs text-muted">↓ Run setup below</span>
               ) : null
             }
           />
         </div>
       ) : (
-        <p className="text-xs text-emerald-700 flex items-center gap-2 px-1">
-          <span className="inline-block h-4 w-4 rounded-full bg-emerald-600 text-white text-[10px] leading-4 text-center">✓</span>
+        <p className="text-xs text-accent-emerald flex items-center gap-2 px-1">
+          <span className="inline-block h-4 w-4 rounded-full bg-accent-emerald text-white text-[10px] leading-4 text-center">✓</span>
           Brief and setup complete. Use the workflow below to keep generating drafts.
         </p>
       )}
 
       {/* Ongoing workflow — visible always once setup is done */}
       {setupDone && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mt-3">
+        <div className="rounded-lg border border-accent-amber/40 bg-accent-amber/10 p-4 mt-3">
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-sm font-semibold text-neutral-900">Generate &amp; review drafts</p>
-              <p className="text-xs text-neutral-600 mt-0.5">
+              <p className="text-sm font-semibold text-text-primary">Generate &amp; review drafts</p>
+              <p className="text-xs text-muted mt-0.5">
                 {pendingCount > 0
                   ? `${pendingCount} draft${pendingCount === 1 ? '' : 's'} waiting for approval. Generate more anytime.`
                   : totalDrafts === 0
                     ? 'Click Generate now to produce your first draft. Then review and publish.'
                     : 'Generate another draft, or review the ones you have.'}
               </p>
-              <p className="text-[11px] text-neutral-500 mt-1">
+              <p className="text-[11px] text-muted mt-1">
                 Each runtime run takes ~5-10s, costs ~$0.005. Use "⚡ Generate now" in the header (visible on every project page).
               </p>
             </div>
             <div className="flex gap-2 flex-wrap">
               <Link
                 href={`/projects/${project.id}/pipeline`}
-                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-50"
+                className="rounded-md border border-border-color bg-surface px-3 py-1.5 text-xs font-medium hover:bg-surface-2"
               >
                 Open Pipeline
               </Link>
               <Link
                 href={`/projects/${project.id}/drafts${pendingCount > 0 ? '?filter=pending' : ''}`}
-                className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
+                className="rounded-md bg-primary text-white px-3 py-1.5 text-xs font-medium hover:bg-primary/90"
               >
                 Open Drafts {totalDrafts > 0 ? `(${totalDrafts})` : ''}
               </Link>
@@ -261,21 +265,21 @@ function StepRow({
   cta: React.ReactNode;
 }) {
   return (
-    <div className={`flex items-center gap-3 rounded-md p-2 ${current ? 'bg-amber-50 border border-amber-200' : ''}`}>
+    <div className={`flex items-center gap-3 rounded-md p-2 ${current ? 'bg-accent-amber/10 border border-accent-amber/40' : ''}`}>
       <span
         className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${
           done
-            ? 'bg-emerald-600 text-white'
+            ? 'bg-accent-emerald text-white'
             : current
-              ? 'bg-amber-500 text-white'
-              : 'bg-neutral-200 text-neutral-600'
+              ? 'bg-accent-amber/100 text-white'
+              : 'bg-surface-2 text-muted'
         }`}
       >
         {done ? '✓' : n}
       </span>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium ${done ? 'text-neutral-600' : 'text-neutral-900'}`}>{label}</p>
-        <p className="text-xs text-neutral-500">{desc}</p>
+        <p className={`text-sm font-medium ${done ? 'text-muted' : 'text-text-primary'}`}>{label}</p>
+        <p className="text-xs text-muted">{desc}</p>
       </div>
       {current && cta}
     </div>
@@ -323,10 +327,10 @@ function StatCell({
   link?: string;
 }) {
   const body = (
-    <div className="rounded-lg border border-neutral-200 p-3">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">{label}</p>
+    <div className="rounded-lg border border-border-color p-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted">{label}</p>
       <p className="mt-1 text-xl font-semibold font-mono">{value}</p>
-      {sub && <p className="text-[10px] text-neutral-500 mt-1 truncate">{sub}</p>}
+      {sub && <p className="text-[10px] text-muted mt-1 truncate">{sub}</p>}
     </div>
   );
   return link ? (
@@ -392,7 +396,7 @@ function BriefForm({ project }: { project: Project }) {
       <div>
         <div className="flex items-baseline justify-between mb-2">
           <h2 className="text-base font-semibold tracking-tight">Brief</h2>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-muted">
             Paste the PRD, product description, or feature list. The setup-time agents (Parser,
             Audience, Voice, Persona, Theme) consume this in Phase 4.
           </p>
@@ -407,9 +411,9 @@ What problems does it solve?
 What are the core features?
 What is the brand voice like?
 Anything else worth knowing — past content, off-limits topics, competitors to differentiate from...`}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full rounded-md border border-border-color px-3 py-2 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-accent-cyan"
         />
-        <p className="mt-1 text-xs text-neutral-400">{brief.length.toLocaleString()} characters</p>
+        <p className="mt-1 text-xs text-muted">{brief.length.toLocaleString()} characters</p>
       </div>
 
       <div>
@@ -422,13 +426,13 @@ Anything else worth knowing — past content, off-limits topics, competitors to 
           value={logoUrl}
           onChange={(e) => setLogoUrl(e.target.value)}
           placeholder="https://example.com/logo.png"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full rounded-md border border-border-color px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
         />
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-muted">
           For now, paste a public URL. Direct upload to S3 lands with the Brand Kit step.
         </p>
         {logoUrl && (
-          <div className="mt-3 inline-flex items-center gap-3 rounded-md border border-neutral-200 p-2">
+          <div className="mt-3 inline-flex items-center gap-3 rounded-md border border-border-color p-2">
             <img
               src={logoUrl}
               alt="Logo preview"
@@ -437,7 +441,7 @@ Anything else worth knowing — past content, off-limits topics, competitors to 
                 (e.currentTarget as HTMLImageElement).style.display = 'none';
               }}
             />
-            <span className="text-xs text-neutral-500">preview</span>
+            <span className="text-xs text-muted">preview</span>
           </div>
         )}
       </div>
@@ -452,9 +456,9 @@ Anything else worth knowing — past content, off-limits topics, competitors to 
           value={publicUrl}
           onChange={(e) => setPublicUrl(e.target.value)}
           placeholder="https://resume-folio.app"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full rounded-md border border-border-color px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-cyan"
         />
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-muted">
           Appears at the bottom of CTA slides and on the project lockup. Leave blank to omit.
         </p>
       </div>
@@ -471,8 +475,8 @@ Anything else worth knowing — past content, off-limits topics, competitors to 
                 onClick={() => toggleChannel(ch)}
                 className={`rounded-md border px-3 py-1.5 text-sm capitalize ${
                   active
-                    ? 'bg-neutral-900 border-neutral-900 text-white'
-                    : 'border-neutral-300 text-neutral-700 hover:bg-neutral-50'
+                    ? 'bg-primary border-primary text-white'
+                    : 'border-border-color text-text-primary hover:bg-surface-2'
                 }`}
               >
                 {ch}
@@ -482,18 +486,18 @@ Anything else worth knowing — past content, off-limits topics, competitors to 
         </div>
       </div>
 
-      <div className="flex items-center gap-3 border-t border-neutral-200 pt-4">
+      <div className="flex items-center gap-3 border-t border-border-color pt-4">
         <button
           onClick={onSave}
           disabled={!dirty || update.isPending || channels.length === 0}
-          className="rounded-md bg-neutral-900 text-white px-4 py-2 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
+          className="rounded-md bg-primary text-white px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
         >
           {update.isPending ? 'Saving…' : 'Save brief'}
         </button>
-        {saved && <span className="text-xs text-emerald-700">Saved.</span>}
-        {errorMessage && <span className="text-xs text-red-600">{errorMessage}</span>}
+        {saved && <span className="text-xs text-accent-emerald">Saved.</span>}
+        {errorMessage && <span className="text-xs text-accent-red">{errorMessage}</span>}
         {!dirty && !saved && !errorMessage && project.brief && (
-          <span className="text-xs text-neutral-500">Up to date.</span>
+          <span className="text-xs text-muted">Up to date.</span>
         )}
       </div>
     </section>
