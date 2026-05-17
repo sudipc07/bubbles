@@ -6,6 +6,7 @@ import { useDecideDraft, useDraft, useMarkPosted } from '../lib/drafts';
 import type { Project } from '../lib/projects';
 import { useSetupOutputs } from '../lib/setup';
 import { SlidePreview } from '../components/SlidePreview';
+import { ProjectHeader } from '../components/ProjectHeader';
 import {
   downloadAllSlidesAsPdf,
   downloadAllSlidesAsZip,
@@ -94,14 +95,21 @@ export function DraftDetailPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-neutral-200">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between text-sm">
-          <Link href={`/projects/${projectId}/drafts`} className="text-neutral-500 hover:text-neutral-900">
-            ← Drafts
+      <ProjectHeader
+        projectId={projectId}
+        activeTab="drafts"
+        rightSlot={
+          <Link
+            href={`/projects/${projectId}/drafts`}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50"
+          >
+            ← All drafts
           </Link>
-          {copyToast && <span className="text-emerald-700">{copyToast} copied</span>}
-        </div>
-      </header>
+        }
+      />
+      {copyToast && (
+        <div className="max-w-4xl mx-auto px-6 pt-2 text-xs text-emerald-700">{copyToast} copied</div>
+      )}
 
       <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         {query.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}

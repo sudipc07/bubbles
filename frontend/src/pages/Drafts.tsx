@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useRoute } from 'wouter';
 import { useDrafts, type DraftFilter } from '../lib/drafts';
+import { ProjectHeader } from '../components/ProjectHeader';
 
 export function DraftsPage() {
   const [, params] = useRoute('/projects/:id/drafts');
@@ -10,32 +11,25 @@ export function DraftsPage() {
 
   if (!projectId) return null;
 
+  const filterToggle = (
+    <div className="inline-flex rounded-md border border-neutral-200 overflow-hidden text-xs">
+      {(['all', 'pending', 'decided'] as const).map((f) => (
+        <button
+          key={f}
+          onClick={() => setFilter(f)}
+          className={`px-3 py-1.5 font-medium capitalize ${
+            filter === f ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'
+          }`}
+        >
+          {f}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen">
-      <header className="border-b border-neutral-200">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-3">
-            <Link href={`/projects/${projectId}`} className="text-neutral-500 hover:text-neutral-900">
-              ← Project
-            </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="font-medium">Drafts</span>
-          </div>
-          <div className="inline-flex rounded-md border border-neutral-200 overflow-hidden text-xs">
-            {(['all', 'pending', 'decided'] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 font-medium capitalize ${
-                  filter === f ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+      <ProjectHeader projectId={projectId} activeTab="drafts" rightSlot={filterToggle} />
 
       <main className="max-w-6xl mx-auto px-6 py-6">
         {drafts.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}

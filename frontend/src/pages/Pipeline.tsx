@@ -4,6 +4,7 @@ import { ApiError } from '../lib/api';
 import { useGraph, useLivePipeline, useRuns, useTriggerRun } from '../lib/pipeline';
 import { useSetupOutputs } from '../lib/setup';
 import { PipelineGraphView } from '../components/PipelineGraph';
+import { ProjectHeader } from '../components/ProjectHeader';
 
 export function PipelinePage() {
   const [, params] = useRoute('/projects/:id/pipeline');
@@ -31,34 +32,27 @@ export function PipelinePage() {
 
   if (!projectId) return null;
 
+  const graphToggle = (
+    <div className="inline-flex rounded-md border border-neutral-200 overflow-hidden text-xs">
+      {(['runtime', 'setup'] as const).map((p) => (
+        <button
+          key={p}
+          onClick={() => setPipelineId(p)}
+          className={`px-3 py-1.5 font-medium capitalize ${
+            pipelineId === p ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'
+          }`}
+        >
+          {p}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen">
-      <header className="border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-4">
-            <Link href={`/projects/${projectId}`} className="text-neutral-500 hover:text-neutral-900">
-              ← Project
-            </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="font-medium">Pipeline</span>
-          </div>
-          <div className="inline-flex rounded-md border border-neutral-200 overflow-hidden text-xs">
-            {(['runtime', 'setup'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPipelineId(p)}
-                className={`px-3 py-1.5 font-medium capitalize ${
-                  pipelineId === p ? 'bg-neutral-900 text-white' : 'bg-white text-neutral-600 hover:bg-neutral-50'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
+      <ProjectHeader projectId={projectId} activeTab="pipeline" rightSlot={graphToggle} />
 
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-4">
+      <main className="max-w-6xl mx-auto px-6 py-6 space-y-4">
         {/* Top stat strip */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <StatCard label="Live events">
@@ -113,25 +107,7 @@ export function PipelinePage() {
         <section>
           <div className="flex items-baseline justify-between mb-2">
             <h2 className="text-base font-semibold tracking-tight capitalize">{pipelineId} graph</h2>
-            {pipelineId === 'runtime' && (
-              <div className="flex items-center gap-3">
-                {triggerError && (
-                  <span className="text-xs text-red-600">{triggerError}</span>
-                )}
-                <button
-                  onClick={() => trigger.mutate()}
-                  disabled={trigger.isPending || !setupReady}
-                  className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-sm font-medium hover:bg-neutral-800 disabled:opacity-50"
-                  title={
-                    !setupReady
-                      ? 'Run setup first (need at least one persona and one theme)'
-                      : 'Real LLM run — produces a Draft, ~$0.005 in tokens'
-                  }
-                >
-                  {trigger.isPending ? 'Starting…' : 'Generate now'}
-                </button>
-              </div>
-            )}
+            {triggerError && <span className="text-xs text-red-600">{triggerError}</span>}
           </div>
           {graph.isLoading && <p className="text-sm text-neutral-500">Loading graph…</p>}
           {graph.data && <PipelineGraphView graph={graph.data} nodeStatus={nodeStatus} />}

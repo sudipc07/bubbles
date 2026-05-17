@@ -7,6 +7,7 @@ import { useRunSetup, useSetupOutputs } from '../lib/setup';
 import { SetupOutputsView } from '../components/SetupOutputs';
 import { useDrafts } from '../lib/drafts';
 import { useLivePipeline, useRuns } from '../lib/pipeline';
+import { ProjectHeader } from '../components/ProjectHeader';
 
 const ALL_CHANNELS = ['linkedin', 'instagram'] as const;
 type Channel = (typeof ALL_CHANNELS)[number];
@@ -25,39 +26,15 @@ export function ProjectDetailPage() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-neutral-200">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between text-sm">
-          <Link href="/" className="text-neutral-500 hover:text-neutral-900">
-            ← All projects
-          </Link>
-          {project && (
-            <div className="flex gap-2">
-              <Link
-                href={`/projects/${project.id}/drafts`}
-                className="rounded-md border border-neutral-200 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
-              >
-                Drafts
-              </Link>
-              <Link
-                href={`/projects/${project.id}/pipeline`}
-                className="rounded-md border border-neutral-200 px-3 py-1.5 font-medium text-neutral-700 hover:bg-neutral-50"
-              >
-                Pipeline →
-              </Link>
-            </div>
-          )}
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-6 py-8">
+      <ProjectHeader projectId={id} activeTab="overview" />
+      <main className="max-w-6xl mx-auto px-6 py-8">
         {query.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
         {query.error && <p className="text-sm text-red-600">Could not load project.</p>}
         {project && (
           <>
             <div className="mb-6">
-              <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
-              <p className="text-sm text-neutral-500 font-mono mt-1">{project.slug}</p>
-              <p className="text-xs text-neutral-500 mt-2">
+              <p className="text-xs text-neutral-500 font-mono">{project.slug}</p>
+              <p className="text-xs text-neutral-500 mt-1">
                 Status <span className="font-mono">{project.status}</span> · Monthly cost ceiling{' '}
                 <span className="font-mono">${project.monthlyCostCeilingUsd}</span>
               </p>
@@ -185,106 +162,123 @@ function NextSteps({ project }: { project: Project }) {
   const briefDone = !!project.brief && project.brief.trim().length >= 30;
   const setupDone =
     !!setup.data && setup.data.personas.length > 0 && setup.data.themes.length > 0;
-  const draftDone = (drafts.data?.length ?? 0) > 0;
-  const pendingDraft = drafts.data?.find((d) => d.status === 'pending');
-  const approvedDraft = drafts.data?.find((d) => d.status === 'approved');
 
-  // Pick the *next* unfinished step (or the next operator decision) as the
-  // primary call to action. Everything else is shown as state.
-  let current: 1 | 2 | 3 | 4 = 1;
-  if (briefDone) current = 2;
-  if (briefDone && setupDone) current = 3;
-  if (briefDone && setupDone && draftDone) current = 4;
+  const pendingCount = drafts.data?.filter((d) => d.status === 'pending').length ?? 0;
+  const totalDrafts = drafts.data?.length ?? 0;
 
-  const steps = [
-    {
-      n: 1,
-      label: 'Write the brief',
-      desc: 'Paste a PRD or feature list (30+ chars).',
-      done: briefDone,
-    },
-    {
-      n: 2,
-      label: 'Run setup',
-      desc: 'Generates 5 personas, themes, brand kit, and 10 sample posts.',
-      done: setupDone,
-    },
-    {
-      n: 3,
-      label: 'Generate first draft',
-      desc: 'Runtime pipeline produces a Draft from your personas.',
-      done: draftDone,
-    },
-    {
-      n: 4,
-      label: 'Review and publish',
-      desc: pendingDraft
-        ? '1+ drafts waiting for approval.'
-        : approvedDraft
-          ? 'Mark approved drafts as posted with their URL.'
-          : 'When drafts arrive, approve or reject and mark them posted.',
-      done: false, // ongoing
-    },
-  ];
+  // Setup is the only milestone that "completes". Generation + review are
+  // ongoing — once setup is ready, those become the active workflow.
+  const setupTodo = !briefDone || !setupDone;
 
   return (
-    <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-4">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-3">
-        Next steps
+    <section className="mb-6 space-y-2">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+        {setupTodo ? 'Get started' : 'Workflow'}
       </h2>
-      <ol className="space-y-2">
-        {steps.map((s) => {
-          const isCurrent = s.n === current;
-          const cta =
-            s.n === 1 ? null
-              : s.n === 2 ? (
-                <span className="text-xs text-neutral-500">↓ Run setup below</span>
-              ) : s.n === 3 ? (
-                <Link
-                  href={`/projects/${project.id}/pipeline`}
-                  className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
-                >
-                  Open Pipeline →
-                </Link>
-              ) : (
-                <Link
-                  href={`/projects/${project.id}/drafts${pendingDraft ? '?filter=pending' : ''}`}
-                  className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
-                >
-                  Open Drafts →
-                </Link>
-              );
 
-          return (
-            <li
-              key={s.n}
-              className={`flex items-center gap-3 rounded-md p-2 ${
-                isCurrent ? 'bg-amber-50 border border-amber-200' : ''
-              }`}
-            >
-              <span
-                className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${
-                  s.done
-                    ? 'bg-emerald-600 text-white'
-                    : isCurrent
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-neutral-200 text-neutral-600'
-                }`}
+      {/* One-time setup checklist — collapses to a single done line once both are complete */}
+      {setupTodo ? (
+        <div className="rounded-lg border border-neutral-200 bg-white p-3 space-y-2">
+          <StepRow
+            n={1}
+            label="Write the brief"
+            desc="Paste a PRD or feature list (30+ chars). Used by the setup agents."
+            done={briefDone}
+            current={!briefDone}
+            cta={null}
+          />
+          <StepRow
+            n={2}
+            label="Run setup"
+            desc="Generates personas, themes, brand kit, and 10 sample posts. One-time per project."
+            done={setupDone}
+            current={briefDone && !setupDone}
+            cta={
+              briefDone && !setupDone ? (
+                <span className="text-xs text-neutral-500">↓ Run setup below</span>
+              ) : null
+            }
+          />
+        </div>
+      ) : (
+        <p className="text-xs text-emerald-700 flex items-center gap-2 px-1">
+          <span className="inline-block h-4 w-4 rounded-full bg-emerald-600 text-white text-[10px] leading-4 text-center">✓</span>
+          Brief and setup complete. Use the workflow below to keep generating drafts.
+        </p>
+      )}
+
+      {/* Ongoing workflow — visible always once setup is done */}
+      {setupDone && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 mt-3">
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-sm font-semibold text-neutral-900">Generate &amp; review drafts</p>
+              <p className="text-xs text-neutral-600 mt-0.5">
+                {pendingCount > 0
+                  ? `${pendingCount} draft${pendingCount === 1 ? '' : 's'} waiting for approval. Generate more anytime.`
+                  : totalDrafts === 0
+                    ? 'Click Generate now to produce your first draft. Then review and publish.'
+                    : 'Generate another draft, or review the ones you have.'}
+              </p>
+              <p className="text-[11px] text-neutral-500 mt-1">
+                Each runtime run takes ~5-10s, costs ~$0.005. Use "⚡ Generate now" in the header (visible on every project page).
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Link
+                href={`/projects/${project.id}/pipeline`}
+                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-50"
               >
-                {s.done ? '✓' : s.n}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${s.done ? 'text-neutral-600' : 'text-neutral-900'}`}>
-                  {s.label}
-                </p>
-                <p className="text-xs text-neutral-500">{s.desc}</p>
-              </div>
-              {isCurrent && cta}
-            </li>
-          );
-        })}
-      </ol>
+                Open Pipeline
+              </Link>
+              <Link
+                href={`/projects/${project.id}/drafts${pendingCount > 0 ? '?filter=pending' : ''}`}
+                className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
+              >
+                Open Drafts {totalDrafts > 0 ? `(${totalDrafts})` : ''}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
+  );
+}
+
+function StepRow({
+  n,
+  label,
+  desc,
+  done,
+  current,
+  cta,
+}: {
+  n: number;
+  label: string;
+  desc: string;
+  done: boolean;
+  current: boolean;
+  cta: React.ReactNode;
+}) {
+  return (
+    <div className={`flex items-center gap-3 rounded-md p-2 ${current ? 'bg-amber-50 border border-amber-200' : ''}`}>
+      <span
+        className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${
+          done
+            ? 'bg-emerald-600 text-white'
+            : current
+              ? 'bg-amber-500 text-white'
+              : 'bg-neutral-200 text-neutral-600'
+        }`}
+      >
+        {done ? '✓' : n}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-medium ${done ? 'text-neutral-600' : 'text-neutral-900'}`}>{label}</p>
+        <p className="text-xs text-neutral-500">{desc}</p>
+      </div>
+      {current && cta}
+    </div>
   );
 }
 
