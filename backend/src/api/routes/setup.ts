@@ -8,6 +8,10 @@ import {
   deleteTheme,
   deleteVoice,
   loadSetupOutputs,
+  setPersonaActive,
+  setSelectedAudience,
+  setSelectedVoice,
+  setThemeActive,
   updateBrandKit,
 } from '../../db/repos/setup.js';
 import { checkLimit } from '../../lib/rateLimit.js';
@@ -70,6 +74,64 @@ setup.patch('/:projectId/brand-kit', async (req, res) => {
     return;
   }
   res.json({ brandKit: kit });
+});
+
+// ───────── Selection / activation (Choose wizard) ─────────
+// PATCH /api/projects/:projectId/setup/audiences/:id/select  -> single-select
+// PATCH /api/projects/:projectId/setup/voices/:id/select     -> single-select
+// PATCH /api/projects/:projectId/setup/personas/:id/active   -> multi-select
+// PATCH /api/projects/:projectId/setup/themes/:id/active     -> multi-select
+
+setup.patch('/:projectId/setup/audiences/:id/select', async (req, res) => {
+  const project = await findProjectByIdForMember(req.params.projectId, req.user!.id);
+  if (!project || project.role !== 'owner') {
+    res.status(project ? 403 : 404).json({ error: project ? 'owner_only' : 'not_found' });
+    return;
+  }
+  await setSelectedAudience(project.id, req.params.id);
+  res.json({ ok: true });
+});
+
+setup.patch('/:projectId/setup/voices/:id/select', async (req, res) => {
+  const project = await findProjectByIdForMember(req.params.projectId, req.user!.id);
+  if (!project || project.role !== 'owner') {
+    res.status(project ? 403 : 404).json({ error: project ? 'owner_only' : 'not_found' });
+    return;
+  }
+  await setSelectedVoice(project.id, req.params.id);
+  res.json({ ok: true });
+});
+
+const activeSchema = z.object({ active: z.boolean() });
+
+setup.patch('/:projectId/setup/personas/:id/active', async (req, res) => {
+  const project = await findProjectByIdForMember(req.params.projectId, req.user!.id);
+  if (!project || project.role !== 'owner') {
+    res.status(project ? 403 : 404).json({ error: project ? 'owner_only' : 'not_found' });
+    return;
+  }
+  const parsed = activeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_input' });
+    return;
+  }
+  await setPersonaActive(project.id, req.params.id, parsed.data.active);
+  res.json({ ok: true });
+});
+
+setup.patch('/:projectId/setup/themes/:id/active', async (req, res) => {
+  const project = await findProjectByIdForMember(req.params.projectId, req.user!.id);
+  if (!project || project.role !== 'owner') {
+    res.status(project ? 403 : 404).json({ error: project ? 'owner_only' : 'not_found' });
+    return;
+  }
+  const parsed = activeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: 'invalid_input' });
+    return;
+  }
+  await setThemeActive(project.id, req.params.id, parsed.data.active);
+  res.json({ ok: true });
 });
 
 // DELETE /api/projects/:projectId/setup/{audiences|voices|personas|themes}/:id

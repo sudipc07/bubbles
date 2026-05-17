@@ -2,7 +2,8 @@ import { Route, Switch, useRoute } from 'wouter';
 import { AuthProvider, useAuth } from './lib/auth';
 import { LoginPage } from './pages/Login';
 import { ProjectsListPage } from './pages/ProjectsList';
-import { ProjectDetailPage } from './pages/ProjectDetail';
+import { DashboardPage } from './pages/Dashboard';
+import { BrandPage } from './pages/Brand';
 import { PipelinePage } from './pages/Pipeline';
 import { DraftsPage } from './pages/Drafts';
 import { DraftDetailPage } from './pages/DraftDetail';
@@ -46,10 +47,8 @@ function Shell() {
     <AppShell projectId={projectId}>
       <Switch>
         <Route path="/" component={ProjectsListPage} />
-        <Route path="/projects/:id" component={ProjectDetailPage} />
-        {/* /projects/:id/brand currently maps to the same detail page;
-            Commit 2 will introduce a dedicated Brand page. */}
-        <Route path="/projects/:id/brand" component={ProjectDetailPage} />
+        <Route path="/projects/:id" component={DashboardPage} />
+        <Route path="/projects/:id/brand" component={BrandPage} />
         <Route path="/projects/:id/pipeline" component={PipelinePage} />
         <Route path="/projects/:id/drafts" component={DraftsPage} />
         <Route path="/projects/:id/drafts/:draftId" component={DraftDetailPage} />

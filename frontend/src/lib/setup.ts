@@ -91,6 +91,48 @@ export function useRunSetup(projectId: string | undefined) {
   });
 }
 
+export function useSelectAudience(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (audienceId: string) =>
+      api(`/api/projects/${projectId}/setup/audiences/${audienceId}/select`, { method: 'PATCH' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] }),
+  });
+}
+
+export function useSelectVoice(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (voiceId: string) =>
+      api(`/api/projects/${projectId}/setup/voices/${voiceId}/select`, { method: 'PATCH' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] }),
+  });
+}
+
+export function useTogglePersona(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      api(`/api/projects/${projectId}/setup/personas/${id}/active`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] }),
+  });
+}
+
+export function useToggleTheme(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      api(`/api/projects/${projectId}/setup/themes/${id}/active`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', projectId, 'setup'] }),
+  });
+}
+
 export function useUpdateBrandKit(projectId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

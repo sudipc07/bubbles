@@ -15,6 +15,48 @@ import {
   type Voice,
 } from '../schema.js';
 
+// ───────── Selection / activation flags (curated by the Brand wizard) ─────────
+
+/**
+ * Audience is single-select per project: setting one to true flips all
+ * others to false in the same transaction. Voice has the same shape.
+ */
+export async function setSelectedAudience(projectId: string, audienceId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.update(audiences).set({ isSelected: false }).where(eq(audiences.projectId, projectId));
+    await tx
+      .update(audiences)
+      .set({ isSelected: true })
+      .where(and(eq(audiences.projectId, projectId), eq(audiences.id, audienceId)));
+  });
+}
+
+export async function setSelectedVoice(projectId: string, voiceId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.update(voices).set({ isSelected: false }).where(eq(voices.projectId, projectId));
+    await tx
+      .update(voices)
+      .set({ isSelected: true })
+      .where(and(eq(voices.projectId, projectId), eq(voices.id, voiceId)));
+  });
+}
+
+// Personas and themes are multi-select (operator keeps several active);
+// just toggle the row.
+export async function setPersonaActive(projectId: string, personaId: string, active: boolean): Promise<void> {
+  await db
+    .update(personas)
+    .set({ isActive: active })
+    .where(and(eq(personas.projectId, projectId), eq(personas.id, personaId)));
+}
+
+export async function setThemeActive(projectId: string, themeId: string, active: boolean): Promise<void> {
+  await db
+    .update(themes)
+    .set({ isActive: active })
+    .where(and(eq(themes.projectId, projectId), eq(themes.id, themeId)));
+}
+
 export interface BrandKitPatch {
   palette?: {
     primary: string;

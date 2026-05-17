@@ -39,7 +39,10 @@ export async function triggerSetupRun(input: SetupTriggerInput): Promise<{ runId
   // Fire-and-forget.
   (async () => {
     try {
-      await wipePriorSetup(input.project.id);
+      // Additive: each "Generate candidates" run adds new candidates with a
+      // fresh createdAt. Operator curates via the wizard (isSelected/isActive)
+      // and the × button. Brand kit is the only single-per-project: replace
+      // it inside the pipeline so the latest run wins.
       await runSetupPipeline(ctx, input.project);
       await finishRun(ctx.runId, true);
     } catch (err) {
@@ -50,15 +53,6 @@ export async function triggerSetupRun(input: SetupTriggerInput): Promise<{ runId
   })();
 
   return { runId: ctx.runId };
-}
-
-async function wipePriorSetup(projectId: string): Promise<void> {
-  // Order matters: samples FK personas, so personas first would cascade.
-  await db.delete(audiences).where(eq(audiences.projectId, projectId));
-  await db.delete(voices).where(eq(voices.projectId, projectId));
-  await db.delete(themes).where(eq(themes.projectId, projectId));
-  await db.delete(brandKits).where(eq(brandKits.projectId, projectId));
-  await db.delete(personas).where(eq(personas.projectId, projectId)); // cascades samples
 }
 
 async function runSetupPipeline(ctx: RunContext, project: Project): Promise<void> {
@@ -155,6 +149,9 @@ async function runSetupPipeline(ctx: RunContext, project: Project): Promise<void
       exampleAngles: t.exampleAngles,
     })),
   );
+  // Brand kit is single-per-project (unique index on project_id). Replace
+  // on re-run so the latest candidate wins.
+  await db.delete(brandKits).where(eq(brandKits.projectId, project.id));
   await db.insert(brandKits).values({
     id: newId(),
     projectId: project.id,
