@@ -1,4 +1,4 @@
-import { Link, useRoute } from 'wouter';
+import { Link, useLocation, useRoute } from 'wouter';
 import { useAuth, useLogout } from '../lib/auth';
 import { useDrafts } from '../lib/drafts';
 import { useSetupOutputs } from '../lib/setup';
@@ -21,6 +21,8 @@ interface Props {
 export function SideNav({ projectId }: Props) {
   const { user } = useAuth();
   const logout = useLogout();
+  const [location] = useLocation();
+  const inAdmin = location.startsWith('/admin');
 
   // Pull live state for the workflow indicators
   const drafts = useDrafts(projectId, 'pending');
@@ -61,6 +63,9 @@ export function SideNav({ projectId }: Props) {
       ]
     : [];
 
+  // Project-scope sidebar = workflow + ops. Admin is intentionally NOT here:
+  // it lives at the root context so jumping to it is an explicit "leave the
+  // project" action via the projects list, not a sidebar-shape mutation.
   const ops: NavItem[] = projectId
     ? [
         { key: 'dashboard', step: null, label: 'DASHBOARD', icon: 'dashboard', href: `/projects/${projectId}`, match: '/projects/:id' },
@@ -70,7 +75,9 @@ export function SideNav({ projectId }: Props) {
         { key: 'projects', step: null, label: 'PROJECTS', icon: 'apps', href: '/', match: '/' },
       ];
 
-  if (user?.isAdmin) {
+  // At root scope (no project), admins also see the admin entry as a peer
+  // of Projects. Inside a project, they don't — they back out first.
+  if (!projectId && user?.isAdmin) {
     ops.push({
       key: 'admin',
       step: null,
@@ -98,6 +105,15 @@ export function SideNav({ projectId }: Props) {
             </p>
           )}
 
+          {inAdmin && (
+            <div className="-mt-3 rounded border border-accent-amber/40 bg-accent-amber/10 px-2 py-1.5 flex items-center gap-2">
+              <span className="material-symbols-outlined text-accent-amber text-[16px]">shield_person</span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-accent-amber font-semibold">
+                Admin Mode
+              </span>
+            </div>
+          )}
+
           {workflow.length > 0 && (
             <div>
               <SectionLabel>WORKFLOW</SectionLabel>
@@ -121,14 +137,25 @@ export function SideNav({ projectId }: Props) {
 
         <div className="flex flex-col gap-3">
           {user && (
-            <div className="flex items-center justify-between text-[10px] font-mono text-muted">
-              <span className="truncate" title={user.email}>{user.email}</span>
-              <button
-                onClick={() => logout.mutate()}
-                className="text-muted hover:text-accent-red transition-colors uppercase tracking-wider"
-              >
-                logout
-              </button>
+            <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-muted">
+              <span className="truncate flex-1 min-w-0" title={user.email}>{user.email}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                {projectId && user.isAdmin && !inAdmin && (
+                  <Link
+                    href="/admin"
+                    className="material-symbols-outlined text-muted hover:text-accent-amber text-[16px] transition-colors"
+                    title="Switch to admin mode"
+                  >
+                    shield_person
+                  </Link>
+                )}
+                <button
+                  onClick={() => logout.mutate()}
+                  className="text-muted hover:text-accent-red transition-colors uppercase tracking-wider"
+                >
+                  logout
+                </button>
+              </div>
             </div>
           )}
           <div className="flex items-center gap-2 p-2 rounded bg-background-dark border border-border-color">
