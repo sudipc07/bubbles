@@ -50,9 +50,47 @@ export function PipelinePage() {
 
   return (
     <div className="min-h-screen">
-      <ProjectHeader projectId={projectId} page="PIPELINE" rightSlot={graphToggle} />
+      <ProjectHeader projectId={projectId} page="GENERATE" rightSlot={graphToggle} />
 
       <main className="max-w-6xl mx-auto px-6 py-6 space-y-4">
+        {/* Primary CTA — Generate Post */}
+        <section className="rounded-lg border border-border-color bg-surface p-5">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <h1 className="font-display text-xl font-bold tracking-tight">Run the pipeline</h1>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted mt-1">
+                {setupReady
+                  ? 'Each click fires the 9-agent runtime pipeline · ~$0.005 in tokens · produces 1 draft'
+                  : 'Brand setup must be completed first. Open BRAND on the left.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {triggerError && (
+                <span className="font-mono text-[10px] uppercase tracking-wider text-accent-red">
+                  [ERROR] {triggerError}
+                </span>
+              )}
+              {!setupReady ? (
+                <Link
+                  href={`/projects/${projectId}/brand`}
+                  className="btn-bracket border border-border-color text-muted px-4 py-2 hover:text-text-primary hover:border-text-primary transition-colors"
+                >
+                  GO_TO_BRAND →
+                </Link>
+              ) : (
+                <button
+                  onClick={() => trigger.mutate()}
+                  disabled={trigger.isPending}
+                  className="btn-bracket bg-primary text-white px-5 py-2.5 text-sm hover:bg-primary/90 disabled:opacity-40 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">auto_awesome</span>
+                  {trigger.isPending ? 'GENERATING' : 'GENERATE_POST'}
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
         {/* Top stat strip */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <StatCard label="Live events">

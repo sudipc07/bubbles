@@ -32,7 +32,7 @@ export function DraftsPage() {
 
   return (
     <div className="min-h-full">
-      <ProjectHeader projectId={projectId} page="POSTS" />
+      <ProjectHeader projectId={projectId} page="REVIEW" />
       <main className="max-w-[1400px] mx-auto px-6 py-6">
         <header className="mb-4 flex items-baseline justify-between gap-3 flex-wrap">
           <div>

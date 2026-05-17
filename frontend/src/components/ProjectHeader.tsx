@@ -1,31 +1,27 @@
 import { useQuery } from '@tanstack/react-query';
-import { api, ApiError } from '../lib/api';
+import { api } from '../lib/api';
 import type { Project } from '../lib/projects';
-import { useTriggerRun } from '../lib/pipeline';
-import { useSetupOutputs } from '../lib/setup';
 
 interface Props {
   projectId: string;
-  page: 'DASHBOARD' | 'BRAND' | 'POSTS' | 'PIPELINE' | 'SETTINGS' | 'INSPECTOR';
+  page: 'DASHBOARD' | 'BRAND' | 'GENERATE' | 'REVIEW' | 'PIPELINE' | 'SETTINGS' | 'INSPECTOR' | 'POSTS';
   rightSlot?: React.ReactNode;
 }
 
 /**
- * Content-area header for every page inside a project. Sidebar handles nav;
- * this header sits at the top of the main column and carries:
- *   - 'INIT_PIPELINE // PROJECT_NAME // PAGE' uppercase mono breadcrumb
- *   - optional page-specific control (right slot)
- *   - persistent [GENERATE_POST] button — disabled until brand setup is ready
+ * Content-area header for every page inside a project. Carries the
+ * `[BUBBLES] // PROJECT_NAME // PAGE` breadcrumb and an optional right slot
+ * for page-specific controls (graph type toggle, filter, "All drafts" link).
+ *
+ * No persistent action button — workflow CTAs live on the page they belong
+ * to (e.g. "Generate post" sits inside the GENERATE page, not orbiting
+ * everything).
  */
 export function ProjectHeader({ projectId, page, rightSlot }: Props) {
   const projectQuery = useQuery({
     queryKey: ['projects', projectId],
     queryFn: () => api<{ project: Project }>(`/api/projects/${projectId}`).then((r) => r.project),
   });
-  const setup = useSetupOutputs(projectId);
-  const setupReady = !!setup.data && setup.data.personas.length > 0 && setup.data.themes.length > 0;
-  const trigger = useTriggerRun(projectId);
-  const triggerError = trigger.error instanceof ApiError ? trigger.error.message : null;
 
   const project = projectQuery.data;
   const projectCode = (project?.name ?? 'PROJECT')
@@ -44,27 +40,8 @@ export function ProjectHeader({ projectId, page, rightSlot }: Props) {
           <span className="mx-2 opacity-50">//</span>
           <span>{page}</span>
         </p>
-        <div className="flex items-center gap-2 shrink-0">
-          {rightSlot}
-          <button
-            onClick={() => trigger.mutate()}
-            disabled={trigger.isPending || !setupReady}
-            className="btn-bracket bg-primary text-white px-3 py-1.5 hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            title={
-              !setupReady
-                ? 'Run brand setup first (personas + themes required)'
-                : 'Real LLM run — produces a draft, ~$0.005 in tokens'
-            }
-          >
-            {trigger.isPending ? 'GENERATING' : 'GENERATE_POST'}
-          </button>
-        </div>
+        {rightSlot && <div className="flex items-center gap-2 shrink-0">{rightSlot}</div>}
       </div>
-      {triggerError && (
-        <p className="mt-2 font-mono text-[10px] uppercase tracking-wider text-accent-red">
-          [ERROR] {triggerError}
-        </p>
-      )}
     </div>
   );
 }
