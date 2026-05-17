@@ -50,6 +50,8 @@ export function SlidePreview({ slide, totalSlides, kit, format, projectName, pub
     >
       <div
         className="absolute top-0 left-0 origin-top-left"
+        data-slide-canvas={slide.id}
+        data-slide-index={slide.slideIndex}
         style={{ width: W, height: H, transform: 'scale(var(--scale))' }}
         ref={(el) => {
           if (!el) return;
@@ -190,30 +192,39 @@ function ContentLayout({
   projectName: string;
 }) {
   return (
-    <>
-      {/* Decorative accent bar on the left */}
-      <div
-        className="absolute left-0 top-[8%] bottom-[8%] w-[18px]"
-        style={{ backgroundColor: 'var(--brand-accent)' }}
-      />
-
-      {/* Logo top-right (small) for content slides */}
-      {kit?.logoUrl && (
-        <img
-          src={kit.logoUrl}
-          alt=""
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-          className="absolute top-[64px] right-[64px] h-[96px] object-contain"
-          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+    <div className="absolute inset-0 flex flex-col p-[88px]">
+      {/* Top bar: logo + brand name on the left, accent stripe spacer on the right */}
+      <div className="flex items-center justify-between mb-[40px]">
+        <div className="flex items-center gap-[24px]">
+          {kit?.logoUrl && (
+            <img
+              src={kit.logoUrl}
+              alt=""
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
+              className="h-[120px] max-w-[280px] object-contain"
+              onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = 'none')}
+            />
+          )}
+          <p
+            className="text-[28px] uppercase tracking-[0.2em] font-semibold"
+            style={{
+              color: 'var(--brand-primary)',
+              fontFamily: 'var(--brand-font-heading)',
+            }}
+          >
+            {projectName}
+          </p>
+        </div>
+        <div
+          className="h-[8px] w-[120px] rounded-full"
+          style={{ backgroundColor: 'var(--brand-accent)' }}
         />
-      )}
-
-      <div className="absolute inset-0 flex flex-col p-[88px] pl-[140px]">
-        <ContentBody slide={slide} />
-        <Footer projectName={projectName} slideIndex={slide.slideIndex} totalSlides={totalSlides} />
       </div>
-    </>
+
+      <ContentBody slide={slide} />
+      <Footer projectName={projectName} slideIndex={slide.slideIndex} totalSlides={totalSlides} />
+    </div>
   );
 }
 
@@ -221,22 +232,22 @@ function ContentBody({ slide }: { slide: DraftSlide }) {
   switch (slide.kind) {
     case 'quote':
       return (
-        <div className="flex-1 flex flex-col justify-center max-w-[800px]">
+        <div className="flex-1 flex flex-col justify-center max-w-[900px]">
           <span
-            className="text-[200px] leading-none mb-[-50px]"
+            className="text-[240px] leading-none mb-[-60px]"
             style={{ color: 'var(--brand-accent)', fontFamily: 'var(--brand-font-heading)' }}
           >
             “
           </span>
           <p
-            className="text-[48px] font-semibold leading-[1.2]"
+            className="text-[60px] font-semibold leading-[1.18]"
             style={{ fontFamily: 'var(--brand-font-heading)' }}
           >
             {slide.body}
           </p>
           {slide.title && (
             <p
-              className="mt-[36px] text-[24px] uppercase tracking-[0.15em]"
+              className="mt-[44px] text-[28px] uppercase tracking-[0.15em]"
               style={{ color: 'var(--brand-secondary)' }}
             >
               — {slide.title}
@@ -247,9 +258,9 @@ function ContentBody({ slide }: { slide: DraftSlide }) {
 
     case 'stat':
       return (
-        <div className="flex-1 flex flex-col justify-center max-w-[820px]">
+        <div className="flex-1 flex flex-col justify-center max-w-[900px]">
           <p
-            className="text-[240px] font-extrabold leading-none"
+            className="text-[280px] font-extrabold leading-none"
             style={{
               fontFamily: 'var(--brand-font-heading)',
               color: 'var(--brand-primary)',
@@ -259,13 +270,13 @@ function ContentBody({ slide }: { slide: DraftSlide }) {
           </p>
           {slide.title && (
             <p
-              className="mt-[28px] text-[36px] font-semibold"
+              className="mt-[36px] text-[44px] font-semibold leading-[1.1]"
               style={{ fontFamily: 'var(--brand-font-heading)' }}
             >
               {slide.title}
             </p>
           )}
-          <p className="mt-[16px] text-[28px] leading-[1.4]">{stripStat(slide.body)}</p>
+          <p className="mt-[20px] text-[34px] leading-[1.35]">{stripStat(slide.body)}</p>
         </div>
       );
 
@@ -276,10 +287,10 @@ function ContentBody({ slide }: { slide: DraftSlide }) {
         .filter(Boolean)
         .slice(0, 6);
       return (
-        <div className="flex-1 flex flex-col max-w-[860px]">
+        <div className="flex-1 flex flex-col max-w-[900px]">
           {slide.title && (
             <h3
-              className="text-[56px] font-bold mb-[44px] leading-[1.1]"
+              className="text-[68px] font-bold mb-[48px] leading-[1.05]"
               style={{
                 fontFamily: 'var(--brand-font-heading)',
                 color: 'var(--brand-primary)',
@@ -288,11 +299,11 @@ function ContentBody({ slide }: { slide: DraftSlide }) {
               {slide.title}
             </h3>
           )}
-          <ul className="space-y-[24px] text-[32px] leading-[1.35]">
+          <ul className="space-y-[28px] text-[38px] leading-[1.35]">
             {items.map((it, i) => (
-              <li key={i} className="flex gap-[24px]">
+              <li key={i} className="flex gap-[28px] items-baseline">
                 <span
-                  className="font-bold shrink-0"
+                  className="font-bold shrink-0 text-[44px]"
                   style={{
                     color: 'var(--brand-accent)',
                     fontFamily: 'var(--brand-font-heading)',
@@ -311,10 +322,10 @@ function ContentBody({ slide }: { slide: DraftSlide }) {
     case 'body':
     default:
       return (
-        <div className="flex-1 flex flex-col justify-center max-w-[840px]">
+        <div className="flex-1 flex flex-col justify-center max-w-[900px]">
           {slide.title && (
             <h3
-              className="text-[64px] font-bold leading-[1.05] mb-[36px]"
+              className="text-[80px] font-bold leading-[1.05] mb-[44px]"
               style={{
                 fontFamily: 'var(--brand-font-heading)',
                 color: 'var(--brand-primary)',
@@ -323,7 +334,7 @@ function ContentBody({ slide }: { slide: DraftSlide }) {
               {slide.title}
             </h3>
           )}
-          <p className="text-[32px] leading-[1.4]">{slide.body}</p>
+          <p className="text-[40px] leading-[1.4]">{slide.body}</p>
         </div>
       );
   }

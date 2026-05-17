@@ -6,6 +6,12 @@ import { useDecideDraft, useDraft, useMarkPosted } from '../lib/drafts';
 import type { Project } from '../lib/projects';
 import { useSetupOutputs } from '../lib/setup';
 import { SlidePreview } from '../components/SlidePreview';
+import {
+  downloadAllSlidesAsPdf,
+  downloadAllSlidesAsZip,
+  downloadSlidePng,
+  type SlideExport,
+} from '../lib/exportSlides';
 
 export function DraftDetailPage() {
   const [, params] = useRoute('/projects/:id/drafts/:draftId');
@@ -22,6 +28,59 @@ export function DraftDetailPage() {
   const post = useMarkPosted(projectId, draftId);
   const [postUrl, setPostUrl] = useState('');
   const [copyToast, setCopyToast] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<'png' | 'zip' | 'pdf' | null>(null);
+
+  function collectSlides(): SlideExport[] {
+    const nodes = Array.from(document.querySelectorAll<HTMLElement>('[data-slide-canvas]'));
+    return nodes
+      .map((el) => ({
+        el,
+        index: Number(el.dataset.slideIndex ?? '0'),
+      }))
+      .sort((a, b) => a.index - b.index);
+  }
+
+  function baseFilename(): string {
+    if (!query.data) return 'slides';
+    const t = query.data.draft.topicTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+    return t || 'slides';
+  }
+
+  async function onDownloadSinglePng() {
+    if (downloading) return;
+    setDownloading('png');
+    try {
+      const slides = collectSlides();
+      if (slides.length === 1) {
+        await downloadSlidePng(slides[0]!, baseFilename());
+      } else {
+        await downloadAllSlidesAsZip(slides, baseFilename());
+      }
+    } catch (err) {
+      console.error('download failed', err);
+      window.alert('Download failed — check console for details.');
+    } finally {
+      setDownloading(null);
+    }
+  }
+
+  async function onDownloadPdf() {
+    if (downloading) return;
+    setDownloading('pdf');
+    try {
+      const slides = collectSlides();
+      await downloadAllSlidesAsPdf(slides, baseFilename());
+    } catch (err) {
+      console.error('PDF export failed', err);
+      window.alert('PDF export failed — check console for details.');
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   async function copyText(text: string, label: string) {
     try {
@@ -85,15 +144,33 @@ export function DraftDetailPage() {
             </div>
 
             <section>
-              <div className="flex items-baseline justify-between mb-3">
+              <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
                   Slide previews
                 </h2>
-                <p className="text-xs text-neutral-400">
-                  Brand-kit themed. Pre-Designer/Playwright; final images render server-side once
-                  Phase 5 lands.
-                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={onDownloadSinglePng}
+                    disabled={!!downloading}
+                    className="rounded-md border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-50 disabled:opacity-50"
+                  >
+                    {downloading === 'png' ? 'Exporting…' : query.data.slides.length > 1 ? 'Download PNGs (ZIP)' : 'Download PNG'}
+                  </button>
+                  {query.data.slides.length > 1 && (
+                    <button
+                      onClick={onDownloadPdf}
+                      disabled={!!downloading}
+                      className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800 disabled:opacity-50"
+                    >
+                      {downloading === 'pdf' ? 'Exporting…' : 'Download PDF'}
+                    </button>
+                  )}
+                </div>
               </div>
+              <p className="text-xs text-neutral-400 mb-3">
+                Rendered at native 1080px and downloaded as real image files — ready to upload to
+                LinkedIn or Instagram as-is.
+              </p>
               <div
                 className={`grid gap-4 ${
                   query.data.draft.format === 'single_image'

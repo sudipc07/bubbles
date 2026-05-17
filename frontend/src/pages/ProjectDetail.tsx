@@ -63,6 +63,7 @@ export function ProjectDetailPage() {
               </p>
             </div>
 
+            <NextSteps project={project} />
             <DashboardStrip project={project} />
             <BriefForm project={project} />
             <hr className="my-10 border-neutral-200" />
@@ -173,6 +174,116 @@ function SetupSection({ project }: { project: Project }) {
           No setup outputs yet. Click "Run setup" once your brief is in.
         </p>
       )}
+    </section>
+  );
+}
+
+function NextSteps({ project }: { project: Project }) {
+  const setup = useSetupOutputs(project.id);
+  const drafts = useDrafts(project.id, 'all');
+
+  const briefDone = !!project.brief && project.brief.trim().length >= 30;
+  const setupDone =
+    !!setup.data && setup.data.personas.length > 0 && setup.data.themes.length > 0;
+  const draftDone = (drafts.data?.length ?? 0) > 0;
+  const pendingDraft = drafts.data?.find((d) => d.status === 'pending');
+  const approvedDraft = drafts.data?.find((d) => d.status === 'approved');
+
+  // Pick the *next* unfinished step (or the next operator decision) as the
+  // primary call to action. Everything else is shown as state.
+  let current: 1 | 2 | 3 | 4 = 1;
+  if (briefDone) current = 2;
+  if (briefDone && setupDone) current = 3;
+  if (briefDone && setupDone && draftDone) current = 4;
+
+  const steps = [
+    {
+      n: 1,
+      label: 'Write the brief',
+      desc: 'Paste a PRD or feature list (30+ chars).',
+      done: briefDone,
+    },
+    {
+      n: 2,
+      label: 'Run setup',
+      desc: 'Generates 5 personas, themes, brand kit, and 10 sample posts.',
+      done: setupDone,
+    },
+    {
+      n: 3,
+      label: 'Generate first draft',
+      desc: 'Runtime pipeline produces a Draft from your personas.',
+      done: draftDone,
+    },
+    {
+      n: 4,
+      label: 'Review and publish',
+      desc: pendingDraft
+        ? '1+ drafts waiting for approval.'
+        : approvedDraft
+          ? 'Mark approved drafts as posted with their URL.'
+          : 'When drafts arrive, approve or reject and mark them posted.',
+      done: false, // ongoing
+    },
+  ];
+
+  return (
+    <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-4">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500 mb-3">
+        Next steps
+      </h2>
+      <ol className="space-y-2">
+        {steps.map((s) => {
+          const isCurrent = s.n === current;
+          const cta =
+            s.n === 1 ? null
+              : s.n === 2 ? (
+                <span className="text-xs text-neutral-500">↓ Run setup below</span>
+              ) : s.n === 3 ? (
+                <Link
+                  href={`/projects/${project.id}/pipeline`}
+                  className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
+                >
+                  Open Pipeline →
+                </Link>
+              ) : (
+                <Link
+                  href={`/projects/${project.id}/drafts${pendingDraft ? '?filter=pending' : ''}`}
+                  className="rounded-md bg-neutral-900 text-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-800"
+                >
+                  Open Drafts →
+                </Link>
+              );
+
+          return (
+            <li
+              key={s.n}
+              className={`flex items-center gap-3 rounded-md p-2 ${
+                isCurrent ? 'bg-amber-50 border border-amber-200' : ''
+              }`}
+            >
+              <span
+                className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-xs font-semibold ${
+                  s.done
+                    ? 'bg-emerald-600 text-white'
+                    : isCurrent
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-neutral-200 text-neutral-600'
+                }`}
+              >
+                {s.done ? '✓' : s.n}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${s.done ? 'text-neutral-600' : 'text-neutral-900'}`}>
+                  {s.label}
+                </p>
+                <p className="text-xs text-neutral-500">{s.desc}</p>
+              </div>
+              {isCurrent && cta}
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }
