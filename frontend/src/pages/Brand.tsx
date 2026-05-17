@@ -301,39 +301,21 @@ function CandidatesSection({ project }: { project: Project }) {
         </div>
       )}
 
-      {/* Current brand summary */}
+      {/* Current brand summary — distinguishes operator-curated state from
+          schema defaults so the panel doesn't claim work the operator
+          hasn't actually done. */}
       {setup.data && hasOutputs && !showProgress && (
-        <div className="rounded-lg border border-border-color bg-surface-2/30 p-4 space-y-2">
-          <p className="font-mono text-[10px] uppercase tracking-wider text-muted">CURRENT_BRAND</p>
-          <ul className="space-y-1 text-sm">
-            <CurrentBrandLine label="AUDIENCE" value={selectedAudience?.name ?? '[not selected]'} ok={!!selectedAudience} />
-            <CurrentBrandLine label="VOICE" value={selectedVoice?.name ?? '[not selected]'} ok={!!selectedVoice} />
-            <CurrentBrandLine
-              label="PERSONAS"
-              value={
-                activePersonas.length > 0
-                  ? `${activePersonas.length} active: ${activePersonas.map((p) => p.name).join(', ')}`
-                  : '[none active]'
-              }
-              ok={activePersonas.length > 0}
-            />
-            <CurrentBrandLine
-              label="THEMES"
-              value={
-                activeThemes.length > 0 ? `${activeThemes.length} active` : '[none active]'
-              }
-              ok={activeThemes.length > 0}
-            />
-            <CurrentBrandLine
-              label="BRAND_KIT"
-              value={setup.data.brandKit ? `${setup.data.brandKit.fonts.heading} / ${setup.data.brandKit.fonts.body}` : '[not set]'}
-              ok={!!setup.data.brandKit}
-            />
-          </ul>
-          <p className="font-mono text-[10px] text-muted mt-2">
-            Click [CHOOSE_BRAND] above to curate.
-          </p>
-        </div>
+        <BrandConfigPanel
+          curated={!!selectedAudience || !!selectedVoice}
+          selectedAudience={selectedAudience?.name}
+          selectedVoice={selectedVoice?.name}
+          activePersonas={activePersonas.map((p) => p.name)}
+          totalPersonas={setup.data.personas.length}
+          activeThemes={activeThemes.length}
+          totalThemes={setup.data.themes.length}
+          brandKit={setup.data.brandKit ? `${setup.data.brandKit.fonts.heading} / ${setup.data.brandKit.fonts.body}` : null}
+          onOpenWizard={() => setWizardOpen(true)}
+        />
       )}
 
       {setup.data && !hasOutputs && !showProgress && (
@@ -349,11 +331,144 @@ function CandidatesSection({ project }: { project: Project }) {
   );
 }
 
-function CurrentBrandLine({ label, value, ok }: { label: string; value: string; ok: boolean }) {
+function BrandConfigPanel(props: {
+  curated: boolean;
+  selectedAudience: string | undefined;
+  selectedVoice: string | undefined;
+  activePersonas: string[];
+  totalPersonas: number;
+  activeThemes: number;
+  totalThemes: number;
+  brandKit: string | null;
+  onOpenWizard: () => void;
+}) {
+  const {
+    curated,
+    selectedAudience,
+    selectedVoice,
+    activePersonas,
+    totalPersonas,
+    activeThemes,
+    totalThemes,
+    brandKit,
+    onOpenWizard,
+  } = props;
+
+  const needsAudience = !selectedAudience;
+  const needsVoice = !selectedVoice;
+  // Personas/themes default to all-active. If the operator has never been
+  // in the wizard (curated === false), don't claim they're "curated".
+  const personasState: 'default' | 'curated' | 'empty' =
+    activePersonas.length === 0
+      ? 'empty'
+      : !curated
+        ? 'default'
+        : 'curated';
+  const themesState: 'default' | 'curated' | 'empty' =
+    activeThemes === 0
+      ? 'empty'
+      : !curated
+        ? 'default'
+        : 'curated';
+
+  const allDone = !needsAudience && !needsVoice && personasState !== 'empty' && themesState !== 'empty';
+
+  return (
+    <div
+      className={`rounded-lg border p-4 space-y-3 ${
+        allDone ? 'border-border-color bg-surface-2/30' : 'border-accent-amber/40 bg-accent-amber/5'
+      }`}
+    >
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <p className="font-mono text-[10px] uppercase tracking-wider">
+          <span className={allDone ? 'text-accent-emerald' : 'text-accent-amber'}>
+            [BRAND_CONFIG]
+          </span>
+          <span className="mx-2 text-muted opacity-50">//</span>
+          <span className={allDone ? 'text-text-primary' : 'text-accent-amber'}>
+            {allDone ? 'CURATED' : 'NEEDS_CURATION'}
+          </span>
+        </p>
+        {!allDone && (
+          <button
+            type="button"
+            onClick={onOpenWizard}
+            className="btn-bracket bg-accent-amber text-background-dark px-3 py-1 hover:bg-accent-amber/90 transition-colors text-[11px]"
+          >
+            OPEN_WIZARD
+          </button>
+        )}
+      </div>
+
+      <ul className="space-y-1 text-sm">
+        <ConfigLine
+          label="AUDIENCE"
+          state={needsAudience ? 'missing' : 'ok'}
+          value={selectedAudience ?? 'Not picked yet'}
+        />
+        <ConfigLine
+          label="VOICE"
+          state={needsVoice ? 'missing' : 'ok'}
+          value={selectedVoice ?? 'Not picked yet'}
+        />
+        <ConfigLine
+          label="PERSONAS"
+          state={personasState === 'empty' ? 'missing' : personasState === 'default' ? 'default' : 'ok'}
+          value={
+            personasState === 'empty'
+              ? 'None active'
+              : personasState === 'default'
+                ? `${activePersonas.length}/${totalPersonas} active · default (not curated)`
+                : `${activePersonas.length} active: ${activePersonas.join(', ')}`
+          }
+        />
+        <ConfigLine
+          label="THEMES"
+          state={themesState === 'empty' ? 'missing' : themesState === 'default' ? 'default' : 'ok'}
+          value={
+            themesState === 'empty'
+              ? 'None active'
+              : themesState === 'default'
+                ? `${activeThemes}/${totalThemes} active · default (not curated)`
+                : `${activeThemes}/${totalThemes} active`
+          }
+        />
+        <ConfigLine
+          label="BRAND_KIT"
+          state={brandKit ? 'ok' : 'missing'}
+          value={brandKit ?? 'Not set'}
+        />
+      </ul>
+
+      {!allDone && (
+        <p className="font-mono text-[10px] uppercase tracking-wider text-muted">
+          The runtime is currently using <em>everything</em> in rotation. Pick one audience + voice and
+          curate personas/themes to lock the brand in.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ConfigLine({
+  label,
+  state,
+  value,
+}: {
+  label: string;
+  state: 'ok' | 'missing' | 'default';
+  value: string;
+}) {
+  const labelClass = state === 'missing' ? 'text-accent-amber' : state === 'default' ? 'text-accent-amber/70' : 'text-muted';
+  const valueClass =
+    state === 'ok' ? 'text-text-primary' : state === 'default' ? 'text-accent-amber italic' : 'text-accent-amber italic';
   return (
     <li className="grid grid-cols-[120px_1fr] gap-3 items-baseline">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-muted">{label}</span>
-      <span className={`text-sm ${ok ? 'text-text-primary' : 'text-muted italic'}`}>{value}</span>
+      <span className={`font-mono text-[10px] uppercase tracking-wider ${labelClass}`}>
+        {label}
+        {state === 'missing' && ' ⚠'}
+      </span>
+      <span className={`text-sm ${valueClass}`}>{value}</span>
     </li>
   );
 }
