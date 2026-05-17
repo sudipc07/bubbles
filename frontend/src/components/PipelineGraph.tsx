@@ -28,7 +28,7 @@ function layout(graph: PipelineGraph): Map<string, { x: number; y: number }> {
   const depth = new Map<string, number>();
   const compute = (id: string, visiting: Set<string>): number => {
     if (depth.has(id)) return depth.get(id)!;
-    if (visiting.has(id)) return 0; // cycle guard, shouldn't happen for our DAGs
+    if (visiting.has(id)) return 0;
     visiting.add(id);
     const p = parents.get(id) ?? [];
     const d = p.length === 0 ? 0 : Math.max(...p.map((q) => compute(q, visiting))) + 1;
@@ -58,11 +58,31 @@ function layout(graph: PipelineGraph): Map<string, { x: number; y: number }> {
   return positions;
 }
 
-const statusColors: Record<NodeStatus, { border: string; bg: string; text: string }> = {
-  idle: { border: 'border-border-color', bg: 'bg-surface', text: 'text-text-primary' },
-  running: { border: 'border-accent-cyan', bg: 'bg-accent-cyan/10', text: 'text-accent-cyan' },
-  done: { border: 'border-accent-emerald', bg: 'bg-accent-emerald/10', text: 'text-accent-emerald' },
-  failed: { border: 'border-accent-red', bg: 'bg-accent-red/10', text: 'text-accent-red' },
+// Inline styles, not Tailwind classes — React Flow overrides classes with its
+// own default inline node styling (white bg, dark text). Going inline is the
+// only reliable way to get dark-theme nodes.
+const STATUS_STYLES: Record<NodeStatus, React.CSSProperties> = {
+  idle: {
+    background: '#12141D', // surface
+    border: '2px solid #2A2F3D', // border-color
+    color: '#94A3B8', // muted-bright
+  },
+  running: {
+    background: 'rgba(6, 182, 212, 0.12)',
+    border: '2px solid #06B6D4',
+    color: '#06B6D4',
+    boxShadow: '0 0 12px rgba(6, 182, 212, 0.4)',
+  },
+  done: {
+    background: 'rgba(16, 185, 129, 0.12)',
+    border: '2px solid #10B981',
+    color: '#10B981',
+  },
+  failed: {
+    background: 'rgba(239, 68, 68, 0.14)',
+    border: '2px solid #EF4444',
+    color: '#EF4444',
+  },
 };
 
 export function PipelineGraphView({ graph, nodeStatus }: Props) {
@@ -72,23 +92,32 @@ export function PipelineGraphView({ graph, nodeStatus }: Props) {
     () =>
       graph.nodes.map((n) => {
         const status = nodeStatus[n.id] ?? 'idle';
-        const c = statusColors[status];
+        const s = STATUS_STYLES[status];
         return {
           id: n.id,
           position: positions.get(n.id) ?? { x: 0, y: 0 },
-          data: { label: n.label, status, llm: n.llm },
+          data: { label: n.label },
           type: 'default',
           sourcePosition: Position.Right,
           targetPosition: Position.Left,
           width: NODE_WIDTH,
           height: NODE_HEIGHT,
           style: {
+            ...s,
             width: NODE_WIDTH,
             height: NODE_HEIGHT,
+            borderRadius: 6,
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 11,
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            padding: '0 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           },
-          className: `rounded-lg border-2 ${c.border} ${c.bg} ${c.text} text-sm font-medium ${
-            status === 'running' ? 'animate-pulse' : ''
-          }`,
+          className: status === 'running' ? 'animate-pulse' : '',
         };
       }),
     [graph.nodes, positions, nodeStatus],
@@ -102,16 +131,23 @@ export function PipelineGraphView({ graph, nodeStatus }: Props) {
         target: e.to,
         type: 'smoothstep',
         label: e.payload,
-        labelStyle: { fontSize: 10, fill: '#737373' },
-        labelBgPadding: [4, 2],
-        labelBgStyle: { fill: '#fafafa', fillOpacity: 0.9 },
-        style: { stroke: '#a3a3a3', strokeWidth: 1.5 },
+        labelStyle: {
+          fontSize: 10,
+          fontFamily: 'JetBrains Mono, monospace',
+          fill: '#94A3B8',
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+        },
+        labelBgPadding: [6, 3],
+        labelBgBorderRadius: 4,
+        labelBgStyle: { fill: '#12141D', fillOpacity: 0.95, stroke: '#2A2F3D' },
+        style: { stroke: '#2A2F3D', strokeWidth: 1.5 },
       })),
     [graph.edges],
   );
 
   return (
-    <div className="h-[380px] w-full rounded-lg border border-border-color bg-surface">
+    <div className="h-[380px] w-full rounded-lg border border-border-color bg-background-dark">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -122,8 +158,9 @@ export function PipelineGraphView({ graph, nodeStatus }: Props) {
         elementsSelectable={false}
         zoomOnDoubleClick={false}
         panOnDrag
+        proOptions={{ hideAttribution: true }}
       >
-        <Background gap={20} size={1} color="#e5e5e5" />
+        <Background gap={24} size={1} color="#1F2330" />
       </ReactFlow>
     </div>
   );
